@@ -47,11 +47,12 @@ public final class SnakeRenderAssets {
     // Text
     private SimplePolygon scorePoly;
     private String scoreText = "";
+    private float scoreBaseDrawW = 1f;
+    private float scoreBaseDrawH = 1f;
     private float scoreDrawW = 1f;
     private float scoreDrawH = 1f;
 
-    private SimplePolygon winnerPoly0;
-    private SimplePolygon winnerPoly1;
+    private SimplePolygon winnerPoly;
     private float winnerDrawW = 1f;
     private float winnerDrawH = 1f;
 
@@ -94,7 +95,7 @@ public final class SnakeRenderAssets {
     }
 
     public void setScoreText(String newText) {
-        if (newText == null) newText = "";
+        if (newText == null) newText = "no";
         if (newText.equals(scoreText) && scorePoly != null) return;
         scoreText = newText;
         if (scorePoly != null) scorePoly.delete();
@@ -106,7 +107,9 @@ public final class SnakeRenderAssets {
         float ts = sizx * 2.0f;
         float baseW = Math.max(8f, ts * 8f);
         float baseH = Math.max(8f, ts * 2.2f);
-        // redrawScore rotates the texture by 90 degrees => draw size swaps.
+        scoreBaseDrawW = baseW;
+        scoreBaseDrawH = baseH;
+        // We rotate the polygon by 90 degrees at draw time => AABB size swaps.
         scoreDrawW = baseH;
         scoreDrawH = baseW;
     }
@@ -167,16 +170,23 @@ public final class SnakeRenderAssets {
         // Same placement intent as the old Processing rotate(90)/text: center-ish near the left.
         float centerX = x / 20.0f;
         float centerY = (y / 2.0f) - (sizx / 2.0f);
-        float tlx = centerX - scoreDrawW * 0.5f;
-        float tly = centerY - scoreDrawH * 0.5f;
-        tlx = Math.max(0f, Math.min(tlx, game.getX() - scoreDrawW));
-        tly = Math.max(0f, Math.min(tly, game.getY() - scoreDrawH));
-        scorePoly.prepareAndDraw(tlx, tly, scoreDrawW, scoreDrawH, z);
+        float aabbTlx = centerX - scoreDrawW * 0.5f;
+        float aabbTly = centerY - scoreDrawH * 0.5f;
+        aabbTlx = Math.max(0f, Math.min(aabbTlx, game.getX() - scoreDrawW));
+        aabbTly = Math.max(0f, Math.min(aabbTly, game.getY() - scoreDrawH));
+
+        // SimplePolygon.rotate is centered, while our layout math is AABB-based.
+        // Convert the desired AABB back into a pre-rotation rect with the same center.
+        float aabbCenterX = aabbTlx + scoreDrawW * 0.5f;
+        float aabbCenterY = aabbTly + scoreDrawH * 0.5f;
+        float rectTlx = aabbCenterX - scoreBaseDrawW * 0.5f;
+        float rectTly = aabbCenterY - scoreBaseDrawH * 0.5f;
+
+        scorePoly.prepareAndDraw(rectTlx, rectTly, scoreBaseDrawW, scoreBaseDrawH, Utils.radians(90.0f), z);
     }
 
     public void drawWinner(int snakeId, SnakeGame game, float z) {
-        SimplePolygon poly = (snakeId == 0) ? winnerPoly0 : winnerPoly1;
-        if (poly == null) return;
+        if (winnerPoly == null) return;
 
         // Original sketch draws text with default LEFT baseline. Convert that intent into a top-left rect.
         float anchorX;
@@ -194,7 +204,9 @@ public final class SnakeRenderAssets {
         // Clamp into the visible screen to avoid disappearing text due to layout changes.
         tlx = Math.max(0f, Math.min(tlx, game.getX() - winnerDrawW));
         tly = Math.max(0f, Math.min(tly, game.getY() - winnerDrawH));
-        poly.prepareAndDraw(tlx, tly, winnerDrawW, winnerDrawH, z);
+
+        float rot = (snakeId == 0) ? 0.0f : Utils.radians(180.0f);
+        winnerPoly.prepareAndDraw(tlx, tly, winnerDrawW, winnerDrawH, rot, z);
     }
 
     private SimplePolygon createSegmentTile(int snakeId, int bright) {
@@ -352,15 +364,8 @@ public final class SnakeRenderAssets {
         base.textAlign(TextAlign.CENTER);
         base.textSize(ts * UI_TEX_SCALE);
         base.text(text, baseTexW * 0.5f, baseTexH * 0.75f);
-
-        // Rotate 90 degrees into a new bitmap to match the original rotate(90)/text() behavior.
-        float rotW = baseTexH;
-        float rotH = baseTexW;
-        PImage rot = new PImage(Math.max(8f, rotW), Math.max(8f, rotH));
-        rot.clear();
-        rot.setAntiAlias(true);
-        rot.rotImage(base, (rot.getWidth() * 0.5f), (rot.getHeight() * 0.5f), 1.0f, Utils.radians(90.0f));
-        return rot;
+        // Rotations are applied at draw time via SimplePolygon.prepareAndDraw(..., rot, z).
+        return base;
     }
 
     private void buildWinnerTiles() {
@@ -372,7 +377,7 @@ public final class SnakeRenderAssets {
         float texH = Math.max(8f, winnerDrawH * UI_TEX_SCALE);
         float texTs = ts * UI_TEX_SCALE;
 
-        winnerPoly0 = new SimplePolygon(unused -> {
+        winnerPoly = new SimplePolygon(unused -> {
             PImage img = new PImage(texW, texH);
             img.clear();
             img.setAntiAlias(true);
@@ -386,28 +391,6 @@ public final class SnakeRenderAssets {
             img.textSize(texTs);
             img.text("WINNER", texW * 0.5f, texH * 0.75f);
             return img;
-        }, true, 0, page);
-
-        winnerPoly1 = new SimplePolygon(unused -> {
-            // Pre-rotate 180 degrees.
-            PImage base = new PImage(texW, texH);
-            base.clear();
-            base.setAntiAlias(true);
-            base.setUpperText(false);
-            base.noStroke();
-            base.fill(0, 0, 0, 160);
-            float r = Math.max(6f, 12f * UI_TEX_SCALE);
-            base.roundRect(0, 0, texW, texH, r, r);
-            base.fill(255, 255, 255, 255);
-            base.textAlign(TextAlign.CENTER);
-            base.textSize(texTs);
-            base.text("WINNER", texW * 0.5f, texH * 0.75f);
-
-            PImage rot = new PImage(texW, texH);
-            rot.clear();
-            rot.setAntiAlias(true);
-            rot.rotImage(base, texW * 0.5f, texH * 0.5f, 1.0f, Utils.radians(180.0f));
-            return rot;
         }, true, 0, page);
     }
 
