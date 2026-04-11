@@ -1,0 +1,11 @@
+# Build outputs
+**/build/
+**/.gradle/
+
+# Extra safety for compiler artifacts (some were accidentally committed)
+**/*.class
+**/*.dex
+**/*.apk
+
+# Local Codex workspace
+/desktop/.codex

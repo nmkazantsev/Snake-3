@@ -15,10 +15,19 @@ import java.util.function.Function;
 public final class SnakeRenderAssets {
     private final GamePageClass page;
 
-    // Reduce heavy UI/FX texture allocations. Polygons are scaled up at draw time.
-    private static final float UI_TEX_SCALE = 0.5f;
-    private static final float FX_TEX_SCALE = 0.5f;
-    private static final int FX_TEX_MAX = 512;
+    // Fixed texture resolutions (independent from screen size).
+    private static final float SEGMENT_TEX_SIZE = 64f;
+    private static final float FOOD_TEX_SIZE = 64f;
+    private static final float MINE_TEX_SIZE = 128f;
+    private static final float EXPLOSION_TEX_SIZE = 256f;
+    private static final float BUTTON_WIDE_TEX_W = 256f;
+    private static final float BUTTON_WIDE_TEX_H = 110f;
+    private static final float BUTTON_TALL_TEX_W = 128f;
+    private static final float BUTTON_TALL_TEX_H = 220f;
+    private static final float SCORE_TEX_W = 512f;
+    private static final float SCORE_TEX_H = 160f;
+    private static final float WINNER_TEX_W = 512f;
+    private static final float WINNER_TEX_H = 128f;
 
     private float x = 1f;
     private float y = 1f;
@@ -182,7 +191,8 @@ public final class SnakeRenderAssets {
         float rectTlx = aabbCenterX - scoreBaseDrawW * 0.5f;
         float rectTly = aabbCenterY - scoreBaseDrawH * 0.5f;
 
-        scorePoly.prepareAndDraw(rectTlx, rectTly, scoreBaseDrawW, scoreBaseDrawH, Utils.radians(90.0f), z);
+        // NOTE: SimplePolygon.prepareAndDraw signature is (rot, x, y, w, h, z).
+        scorePoly.prepareAndDraw(Utils.radians(90.0f), rectTlx, rectTly, scoreBaseDrawW, scoreBaseDrawH, z);
     }
 
     public void drawWinner(int snakeId, SnakeGame game, float z) {
@@ -206,53 +216,60 @@ public final class SnakeRenderAssets {
         tly = Math.max(0f, Math.min(tly, game.getY() - winnerDrawH));
 
         float rot = (snakeId == 0) ? 0.0f : Utils.radians(180.0f);
-        winnerPoly.prepareAndDraw(tlx, tly, winnerDrawW, winnerDrawH, rot, z);
+        // NOTE: SimplePolygon.prepareAndDraw signature is (rot, x, y, w, h, z).
+        winnerPoly.prepareAndDraw(rot, tlx, tly, winnerDrawW, winnerDrawH, z);
     }
 
     private SimplePolygon createSegmentTile(int snakeId, int bright) {
         return new SimplePolygon(unused -> {
-            PImage img = new PImage(sizx, sizy);
+            float tw = SEGMENT_TEX_SIZE;
+            float th = SEGMENT_TEX_SIZE;
+            PImage img = new PImage(tw, th);
             img.clear();
             img.setAntiAlias(true);
 
             img.stroke(0);
-            img.strokeWeight(1.0f * kx);
+            img.strokeWeight(1.0f);
             if (snakeId == 0) {
                 img.fill(bright + 150, 0.0f, 0.0f);
             } else {
                 img.fill(0.0f, bright + 150, 0.0f);
             }
-            img.rect(0, 0, sizx, sizy);
+            img.rect(0, 0, tw, th);
             return img;
         }, true, 0, page);
     }
 
     private void buildFoodTiles() {
         foodTileWhite = new SimplePolygon(unused -> {
-            PImage img = new PImage(sizx, sizy);
+            float tw = FOOD_TEX_SIZE;
+            float th = FOOD_TEX_SIZE;
+            PImage img = new PImage(tw, th);
             img.clear();
             img.setAntiAlias(true);
             img.fill(255);
             img.stroke(255);
-            img.strokeWeight(3.0f * kx);
-            img.rect(0, 0, sizx, sizy);
+            img.strokeWeight(3.0f);
+            img.rect(0, 0, tw, th);
             return img;
         }, true, 0, page);
 
         foodTileBlue = new SimplePolygon(unused -> {
-            PImage img = new PImage(sizx, sizy);
+            float tw = FOOD_TEX_SIZE;
+            float th = FOOD_TEX_SIZE;
+            PImage img = new PImage(tw, th);
             img.clear();
             img.setAntiAlias(true);
             img.fill(0.0f, 0.0f, 255.0f);
             img.stroke(255);
-            img.strokeWeight(3.0f * kx);
-            img.rect(0, 0, sizx, sizy);
+            img.strokeWeight(3.0f);
+            img.rect(0, 0, tw, th);
             return img;
         }, true, 0, page);
     }
 
     private void buildMineTiles() {
-        final float baseSize = pow2Clamped(sizx * 3.0f * FX_TEX_SCALE, FX_TEX_MAX);
+        final float baseSize = MINE_TEX_SIZE;
         mineTileNormal = new SimplePolygon(unused -> {
             PImage img = new PImage(baseSize, baseSize);
             img.clear();
@@ -282,8 +299,7 @@ public final class SnakeRenderAssets {
     }
 
     private void buildExplosionTile() {
-        // Large surfaces can make sizx very large; keep the base texture bounded and scale at draw time.
-        final float baseSize = pow2Clamped(sizx * 30.0f * FX_TEX_SCALE, FX_TEX_MAX);
+        final float baseSize = EXPLOSION_TEX_SIZE;
         explosionTile = new SimplePolygon(unused -> {
             PImage img = new PImage(baseSize, baseSize);
             img.clear();
@@ -307,38 +323,68 @@ public final class SnakeRenderAssets {
 
     private Function<List<Object>, PImage> redrawButtonWide(int r, int g, int b) {
         return unused -> {
-            float w = Math.max(1f, kx * 350.0f * UI_TEX_SCALE);
-            float h = Math.max(1f, ky * 150.0f * UI_TEX_SCALE);
+            float w = BUTTON_WIDE_TEX_W;
+            float h = BUTTON_WIDE_TEX_H;
             PImage img = new PImage(w, h);
             img.clear();
             img.setAntiAlias(true);
             img.fill(r, g, b);
-            img.stroke(255);
-            img.strokeWeight(3.0f * kx * UI_TEX_SCALE);
-            if (controlsReversed) {
-                img.stroke(255.0f, 0.0f, 0.0f);
-                img.strokeWeight(10.0f * kx * UI_TEX_SCALE);
-            }
+            img.noStroke();
             img.rect(0, 0, w, h);
+
+            float baseSw = Math.max(2f, Math.min(w, h) * 0.03f);
+            img.stroke(255, 255, 255, 255);
+            img.strokeWeight(baseSw);
+            float inset = baseSw * 0.5f;
+            img.rect(inset, inset, w - baseSw, h - baseSw);
+
+            if (controlsReversed) {
+                float outerSw = Math.max(6f, Math.min(w, h) * 0.16f);
+                img.stroke(255.0f, 0.0f, 0.0f, 255.0f);
+                img.strokeWeight(outerSw);
+                float outerInset = outerSw * 0.5f;
+                img.rect(outerInset, outerInset, w - outerSw, h - outerSw);
+
+                float innerSw = Math.max(4f, Math.min(w, h) * 0.08f);
+                img.stroke(255.0f, 90.0f, 90.0f, 255.0f);
+                img.strokeWeight(innerSw);
+                float innerInset = innerSw * 0.5f;
+                img.rect(innerInset, innerInset, w - innerSw, h - innerSw);
+            }
             return img;
         };
     }
 
     private Function<List<Object>, PImage> redrawButtonTall(int r, int g, int b) {
         return unused -> {
-            float w = Math.max(1f, kx * 175.0f * UI_TEX_SCALE);
-            float h = Math.max(1f, ky * 300.0f * UI_TEX_SCALE);
+            float w = BUTTON_TALL_TEX_W;
+            float h = BUTTON_TALL_TEX_H;
             PImage img = new PImage(w, h);
             img.clear();
             img.setAntiAlias(true);
             img.fill(r, g, b);
-            img.stroke(255);
-            img.strokeWeight(3.0f * kx * UI_TEX_SCALE);
-            if (controlsReversed) {
-                img.stroke(255.0f, 0.0f, 0.0f);
-                img.strokeWeight(10.0f * kx * UI_TEX_SCALE);
-            }
+            img.noStroke();
             img.rect(0, 0, w, h);
+
+            float baseSw = Math.max(2f, Math.min(w, h) * 0.03f);
+            img.stroke(255, 255, 255, 255);
+            img.strokeWeight(baseSw);
+            float inset = baseSw * 0.5f;
+            img.rect(inset, inset, w - baseSw, h - baseSw);
+
+            if (controlsReversed) {
+                float outerSw = Math.max(6f, Math.min(w, h) * 0.16f);
+                img.stroke(255.0f, 0.0f, 0.0f, 255.0f);
+                img.strokeWeight(outerSw);
+                float outerInset = outerSw * 0.5f;
+                img.rect(outerInset, outerInset, w - outerSw, h - outerSw);
+
+                float innerSw = Math.max(4f, Math.min(w, h) * 0.08f);
+                img.stroke(255.0f, 90.0f, 90.0f, 255.0f);
+                img.strokeWeight(innerSw);
+                float innerInset = innerSw * 0.5f;
+                img.rect(innerInset, innerInset, w - innerSw, h - innerSw);
+            }
             return img;
         };
     }
@@ -348,8 +394,11 @@ public final class SnakeRenderAssets {
 
         float baseW = Math.max(8f, ts * 8f);
         float baseH = Math.max(8f, ts * 2.2f);
-        float baseTexW = Math.max(8f, baseW * UI_TEX_SCALE);
-        float baseTexH = Math.max(8f, baseH * UI_TEX_SCALE);
+        float baseTexW = SCORE_TEX_W;
+        float baseTexH = SCORE_TEX_H;
+        float rx = baseTexW / baseW;
+        float ry = baseTexH / baseH;
+        float rxy = Math.min(rx, ry);
         PImage base = new PImage(baseTexW, baseTexH);
         base.clear();
         base.setAntiAlias(true);
@@ -357,13 +406,15 @@ public final class SnakeRenderAssets {
         base.noStroke();
         // "Table" background (semi-transparent black)
         base.fill(0, 0, 0, 160);
-        float r = Math.max(6f, 12f * UI_TEX_SCALE);
+        float r = Math.max(6f, 12f * rxy);
         base.roundRect(0, 0, baseTexW, baseTexH, r, r);
         // Text color
         base.fill(255, 255, 255, 255);
         base.textAlign(TextAlign.CENTER);
-        base.textSize(ts * UI_TEX_SCALE);
-        base.text(text, baseTexW * 0.5f, baseTexH * 0.75f);
+        base.textSize(ts * rxy);
+        float th = Math.max(1f, base.getTextHeight(text));
+        float baselineY = (baseTexH * 0.5f) + (th * 0.35f);
+        base.text(text, baseTexW * 0.5f, baselineY);
         // Rotations are applied at draw time via SimplePolygon.prepareAndDraw(..., rot, z).
         return base;
     }
@@ -373,9 +424,12 @@ public final class SnakeRenderAssets {
         winnerDrawW = Math.max(8f, ts * 7.0f);
         winnerDrawH = Math.max(8f, ts * 1.6f);
 
-        float texW = Math.max(8f, winnerDrawW * UI_TEX_SCALE);
-        float texH = Math.max(8f, winnerDrawH * UI_TEX_SCALE);
-        float texTs = ts * UI_TEX_SCALE;
+        float texW = WINNER_TEX_W;
+        float texH = WINNER_TEX_H;
+        float rx = texW / winnerDrawW;
+        float ry = texH / winnerDrawH;
+        float rxy = Math.min(rx, ry);
+        float texTs = Math.max(8f, ts * rxy);
 
         winnerPoly = new SimplePolygon(unused -> {
             PImage img = new PImage(texW, texH);
@@ -384,22 +438,15 @@ public final class SnakeRenderAssets {
             img.setUpperText(false);
             img.noStroke();
             img.fill(0, 0, 0, 160);
-            float r = Math.max(6f, 12f * UI_TEX_SCALE);
+            float r = Math.max(6f, 12f * rxy);
             img.roundRect(0, 0, texW, texH, r, r);
             img.fill(255, 255, 255, 255);
             img.textAlign(TextAlign.CENTER);
             img.textSize(texTs);
-            img.text("WINNER", texW * 0.5f, texH * 0.75f);
+            float th = Math.max(1f, img.getTextHeight("WINNER"));
+            float baselineY = (texH * 0.5f) + (th * 0.5f);
+            img.text("WINNER", texW * 0.5f, baselineY);
             return img;
         }, true, 0, page);
-    }
-
-    private static float pow2Clamped(float desired, int max) {
-        int v = (int) Math.ceil(desired);
-        if (v < 1) v = 1;
-        int p = 1;
-        while (p < v && p < max) p <<= 1;
-        if (p > max) p = max;
-        return (float) p;
     }
 }
