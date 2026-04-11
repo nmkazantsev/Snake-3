@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.example.snake_3'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        // Must be >= engine core.jar bytecode level (core.jar is Java 21 / classfile 65).
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release.set(21)
+}
+
+dependencies {
+    implementation files("../libs/core.jar")
+}

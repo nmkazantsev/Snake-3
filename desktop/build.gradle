@@ -1,0 +1,99 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'com.example.snake_3'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        // Keep bytecode compatible with the IDE runtime (you run with JDK 21).
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+ext {
+    switch (org.gradle.internal.os.OperatingSystem.current()) {
+        case org.gradle.internal.os.OperatingSystem.WINDOWS:
+            lwjglNatives = "natives-windows"
+            break
+        case org.gradle.internal.os.OperatingSystem.LINUX:
+            lwjglNatives = "natives-linux"
+            break
+        case org.gradle.internal.os.OperatingSystem.MAC_OS:
+            lwjglNatives = "natives-macos"
+            break
+    }
+}
+
+ext.lwjglVersion = "3.3.3"
+
+dependencies {
+    implementation files(
+            "libs/core.jar",
+            "libs/desktop.jar"
+    )
+    implementation files('libs/obj-0.4.0.jar')
+    implementation project(':game')
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation 'org.slf4j:slf4j-nop:2.0.17'
+    implementation 'com.googlecode.soundlibs:basicplayer:3.0.0.0'
+    implementation 'com.googlecode.soundlibs:jlayer:1.0.1.4'
+    implementation 'com.googlecode.soundlibs:mp3spi:1.9.5.3'
+
+    implementation 'org.joml:joml:1.10.8'
+    implementation "org.lwjgl:lwjgl:${lwjglVersion}"
+
+    def skijaVersion = "0.143.10"
+
+    implementation "io.github.humbleui:skija-shared:$skijaVersion"
+    implementation "io.github.humbleui:skija-windows-x64:$skijaVersion"
+    implementation "io.github.humbleui:skija-linux-x64:$skijaVersion"
+    implementation "io.github.humbleui:skija-linux-arm64:$skijaVersion"
+    implementation "io.github.humbleui:skija-macos-arm64:$skijaVersion"
+    implementation "io.github.humbleui:skija-macos-x64:$skijaVersion"
+
+    implementation "org.lwjgl:lwjgl-glfw:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-opengl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-opengles:${lwjglVersion}"
+    implementation(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))
+    implementation "org.lwjgl:lwjgl-stb"
+
+    runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-opengl::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-windows-x86"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-linux"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-linux-arm64"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-linux-arm32"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-macos"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-macos-arm64"
+
+    runtimeOnly "org.lwjgl:lwjgl-glfw:${lwjglVersion}:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl-glfw:${lwjglVersion}:natives-linux"
+    runtimeOnly "org.lwjgl:lwjgl-glfw:${lwjglVersion}:natives-macos"
+    runtimeOnly "org.lwjgl:lwjgl-opengl:${lwjglVersion}:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl-opengl:${lwjglVersion}:natives-linux"
+    runtimeOnly "org.lwjgl:lwjgl-opengl:${lwjglVersion}:natives-macos"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    archiveBaseName.set('snake-3')
+    archiveClassifier.set('')
+    archiveVersion.set('1.0')
+    manifest {
+        attributes 'Multi-Release': 'true'
+        attributes 'Main-Class': 'com.example.snake_3.desktop.Main'
+    }
+}

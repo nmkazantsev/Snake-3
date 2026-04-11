@@ -1,0 +1,6 @@
+com.example.snake_3.mobile.test.app-tracing-1.2.0-0 /home/nikita/.gradle/caches/8.13/transforms/8244283bddf5d819b697e7c10ef7f44b/transformed/tracing-1.2.0/res
+com.example.snake_3.mobile.test.app-core-1.7.0-1 /home/nikita/.gradle/caches/8.13/transforms/dc9960faade73131cab7488dce3ebe83/transformed/core-1.7.0/res
+com.example.snake_3.mobile.test.app-androidTest-2 /home/nikita/IdeaProjects/Snake-3/android/app/build/generated/res/resValues/androidTest/debug
+com.example.snake_3.mobile.test.app-mergeDebugAndroidTestResources-3 /home/nikita/IdeaProjects/Snake-3/android/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/merged.dir
+com.example.snake_3.mobile.test.app-mergeDebugAndroidTestResources-4 /home/nikita/IdeaProjects/Snake-3/android/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/stripped.dir
+com.example.snake_3.mobile.test.app-debugAndroidTest-5 /home/nikita/IdeaProjects/Snake-3/android/app/build/intermediates/merged_res/debugAndroidTest/mergeDebugAndroidTestResources
