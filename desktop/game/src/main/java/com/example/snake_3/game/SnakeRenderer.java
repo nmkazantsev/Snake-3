@@ -7,18 +7,31 @@ public final class SnakeRenderer {
 
     private String lastScoreText = null;
     private boolean lastControlsReversed = false;
+    private boolean assetsReady = false;
 
     public SnakeRenderer(GamePageClass page) {
         this.assets = new SnakeRenderAssets(page);
     }
 
-    public void onSurfaceChanged() {
-        // No-op; actual initialization happens on the first render when game metrics are available.
+    public void onSurfaceChanged(SnakeGame game) {
+        // Surface resize/recreate: rebuild size-dependent GPU assets, but do not touch gameplay state.
+        assets.onSurfaceChanged(game);
+        assetsReady = true;
+
+        // Redraw resolution-dependent UI immediately (text texture sizes depend on new metrics).
+        lastControlsReversed = game.isControlsReversed();
+        assets.setControlsReversed(lastControlsReversed);
+
+        lastScoreText = game.getSnakes()[1].getScore() + ":" + game.getSnakes()[0].getScore();
+        assets.setScoreText(lastScoreText);
     }
 
     public void render(SnakeGame game) {
-        // Assets are created once per surface size (MainRenderer calls game.onSurfaceChanged()).
-        if (lastScoreText == null) assets.onSurfaceChanged(game);
+        // Lazy init fallback (should usually be triggered from MainRenderer.onSurfaceChanged()).
+        if (!assetsReady) {
+            assets.onSurfaceChanged(game);
+            assetsReady = true;
+        }
 
         // Sync stateful skins.
         if (lastControlsReversed != game.isControlsReversed()) {
@@ -47,7 +60,7 @@ public final class SnakeRenderer {
                 if (seg != null) assets.drawSegment(si, seg, 0.20f);
             }
             Explosion ex = s.getExplosion();
-            if (ex != null) assets.drawExplosion(ex, 0.22f);
+            if (ex != null) assets.drawExplosion(ex, game, 0.22f);
         }
 
         // Buttons + winner overlays (Processing: buttons drawn after snakes)

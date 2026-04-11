@@ -12,6 +12,8 @@ import com.nikitos.utils.Utils;
 public final class SnakeGame {
     private final int playingUsers = 2;
 
+    private boolean initialized = false;
+
     private float x = 1f;
     private float y = 1f;
     private float kx = 1f;
@@ -38,6 +40,21 @@ public final class SnakeGame {
     private int mineLen = 0;
 
     public void onSurfaceChanged(int width, int height) {
+        updateMetrics(width, height);
+
+        // IMPORTANT: onSurfaceChanged() can be called many times (window resize, reopen, orientation changes).
+        // Gameplay state must not reset here; only size-dependent metrics/resources should.
+        if (!initialized) {
+            initGame();
+            initialized = true;
+        } else {
+            // Recompute UI layout in the current "mode" (normal vs reverted) using the new metrics.
+            applyButtonsLayoutForCurrentState();
+            clampEntitiesToPlayfield();
+        }
+    }
+
+    private void updateMetrics(int width, int height) {
         float ux = Utils.getX();
         float uy = Utils.getY();
 
@@ -50,8 +67,6 @@ public final class SnakeGame {
         kx = x / 720.0f;
         sizx = x / 40.0f;
         sizy = sizx;
-
-        initGame();
     }
 
     private void initGame() {
@@ -70,6 +85,67 @@ public final class SnakeGame {
         }
         for (int i = 0; i < foods.length; i++) {
             foods[i] = new Food(this);
+        }
+    }
+
+    private void applyButtonsLayoutForCurrentState() {
+        boolean revertedActive = Utils.millis() - buttonsReverted <= butRevTime;
+        for (Snake s : snakes) {
+            if (s == null) continue;
+            if (revertedActive) s.revertButtons(this);
+            else s.createButtons(this);
+        }
+    }
+
+    private void clampEntitiesToPlayfield() {
+        int cols = getGridCols();
+        int[] rr = getPlayfieldRowRange();
+        int minRow = rr[0];
+        int maxRow = rr[1];
+
+        for (int si = 0; si < playingUsers; si++) {
+            Snake s = snakes[si];
+            if (s == null) continue;
+            SnakeSegment[] segs = s.getSegments();
+            int len = s.getLength();
+            for (int i = 0; i < len; i++) {
+                SnakeSegment seg = segs[i];
+                if (seg == null) continue;
+                int px = seg.getPx();
+                int py = seg.getPy();
+                if (px < 0) px = cols - 1;
+                if (px >= cols) px = 0;
+                if (py < minRow) py = maxRow;
+                if (py > maxRow) py = minRow;
+                seg.setPx(px);
+                seg.setPy(py);
+            }
+        }
+
+        for (int i = 0; i < foods.length; i++) {
+            Food f = foods[i];
+            if (f == null) continue;
+            int px = f.getPx();
+            int py = f.getPy();
+            if (px < 0) px = cols - 1;
+            if (px >= cols) px = 0;
+            if (py < minRow) py = minRow;
+            if (py > maxRow) py = maxRow;
+            f.setPx(px);
+            f.setPy(py);
+        }
+
+        for (int i = 0; i < mineLen; i++) {
+            Mine m = mines[i];
+            if (m == null) continue;
+            int px = m.getPx();
+            int py = m.getPy();
+            if (px < 0) px = cols - 1;
+            if (px >= cols) px = 0;
+            if (py < minRow) py = minRow;
+            if (py > maxRow) py = maxRow;
+            m.setPx(px);
+            m.setPy(py);
         }
     }
 
@@ -306,5 +382,9 @@ public final class SnakeGame {
 
     public void setButtonsReverted(long buttonsReverted) {
         this.buttonsReverted = buttonsReverted;
+    }
+
+    public boolean isInitialized() {
+        return initialized;
     }
 }

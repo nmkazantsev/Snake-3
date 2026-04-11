@@ -201,45 +201,53 @@ public final class Snake {
 
     public void createButtons(SnakeGame game) {
         if (id == 0) {
-            setButtonSet(game, (game.getX() / 2.0f) - (game.getKx() * 350.0f), game.getY() - (300.0f * game.getKy()));
+            setButtonSet(game, game.getY() - (300.0f * game.getKy()));
         }
         if (id == 1) {
-            setButtonSet(game, (game.getX() / 2.0f) - (game.getKx() * 350.0f), 5.0f * game.getKy());
+            setButtonSet(game, 5.0f * game.getKy());
         }
     }
 
     public void revertButtons(SnakeGame game) {
         if (id == 1) {
-            setButtonSet(game, (game.getX() / 2.0f) - (game.getKx() * 350.0f), game.getY() - (300.0f * game.getKy()));
+            setButtonSet(game, game.getY() - (300.0f * game.getKy()));
         }
         if (id == 0) {
-            setButtonSet(game, (game.getX() / 2.0f) - (game.getKx() * 350.0f), 5.0f * game.getKy());
+            setButtonSet(game, 5.0f * game.getKy());
         }
     }
 
-    private void setButtonSet(SnakeGame game, float ox, float oy) {
+    private void setButtonSet(SnakeGame game, float oy) {
+        // Processing layout is based on a 720px reference and leaves small side margins.
+        // In the engine port we want edge-to-edge buttons so there are no unreachable gaps.
+        float fullW = game.getX();
+        float tallW = fullW * 0.25f; // 175 / (175+350+175)
+        float wideW = fullW * 0.50f; // 350 / (175+350+175)
+        float wideH = game.getKy() * 150.0f;
+        float tallH = game.getKy() * 300.0f;
+
         SnakeButton b0 = buttons[0];
-        b0.setSizx(game.getKx() * 350.0f);
-        b0.setSizy(game.getKy() * 150.0f);
-        b0.setPx((b0.getSizx() / 2.0f) + ox);
+        b0.setSizx(wideW);
+        b0.setSizy(wideH);
+        b0.setPx(tallW);
         b0.setPy(oy);
 
         SnakeButton b1 = buttons[1];
-        b1.setSizx(game.getKx() * 175.0f);
-        b1.setSizy(game.getKy() * 300.0f);
-        b1.setPx((525.0f * game.getKx()) + ox);
+        b1.setSizx(tallW);
+        b1.setSizy(tallH);
+        b1.setPx(tallW + wideW);
         b1.setPy(oy);
 
         SnakeButton b2 = buttons[2];
-        b2.setSizx(game.getKx() * 350.0f);
-        b2.setSizy(game.getKy() * 150.0f);
-        b2.setPx((b2.getSizx() / 2.0f) + ox);
-        b2.setPy((game.getKy() * 150.0f) + oy);
+        b2.setSizx(wideW);
+        b2.setSizy(wideH);
+        b2.setPx(tallW);
+        b2.setPy(wideH + oy);
 
         SnakeButton b3 = buttons[3];
-        b3.setSizx(game.getKx() * 175.0f);
-        b3.setSizy(game.getKy() * 300.0f);
-        b3.setPx(ox);
+        b3.setSizx(tallW);
+        b3.setSizy(tallH);
+        b3.setPx(0.0f);
         b3.setPy(oy);
     }
 

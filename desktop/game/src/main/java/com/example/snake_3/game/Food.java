@@ -3,8 +3,8 @@ package com.example.snake_3.game;
 import com.nikitos.utils.Utils;
 
 public final class Food {
-    private final int px;
-    private final int py;
+    private int px;
+    private int py;
     private final int type;
 
     public Food(SnakeGame game) {
@@ -37,5 +37,12 @@ public final class Food {
     public int getType() {
         return type;
     }
-}
 
+    public void setPx(int px) {
+        this.px = px;
+    }
+
+    public void setPy(int py) {
+        this.py = py;
+    }
+}

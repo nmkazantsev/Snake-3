@@ -4,8 +4,8 @@ import com.nikitos.utils.Utils;
 
 public final class Mine {
     private long explosionTime = 0L;
-    private final int px;
-    private final int py;
+    private int px;
+    private int py;
     private final long setTime;
     private final int id;
 
@@ -45,5 +45,12 @@ public final class Mine {
     public long getSetTime() {
         return setTime;
     }
-}
 
+    public void setPx(int px) {
+        this.px = px;
+    }
+
+    public void setPy(int py) {
+        this.py = py;
+    }
+}

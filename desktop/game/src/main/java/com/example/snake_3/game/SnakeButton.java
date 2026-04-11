@@ -7,7 +7,10 @@ public final class SnakeButton {
     private float sizy;
 
     public boolean checkTouch(float tx, float ty) {
-        return tx > px && tx < px + sizx && ty > py && ty < py + sizy;
+        // Processing sketch used strict comparisons, but in the engine port float math + adjacent buttons
+        // can create thin "dead" seams. Be inclusive (with a tiny epsilon) so borders remain clickable.
+        final float eps = 0.0001f;
+        return tx >= px - eps && tx <= px + sizx + eps && ty >= py - eps && ty <= py + sizy + eps;
     }
 
     public float getPx() {
@@ -42,4 +45,3 @@ public final class SnakeButton {
         this.sizy = sizy;
     }
 }
-

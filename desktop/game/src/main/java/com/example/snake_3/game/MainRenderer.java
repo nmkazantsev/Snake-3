@@ -33,6 +33,8 @@ public class MainRenderer extends GamePageClass {
         // Note: CoreRenderer.engine is initialized by the platform launcher before pages are used.
         glc = CoreRenderer.engine.getPlatformBridge().getGLConstBridge();
         gl = CoreRenderer.engine.getPlatformBridge().getGeneralPlatformBridge();
+        game = new SnakeGame();
+        renderer = new SnakeRenderer(this);
     }
 
     @Override
@@ -40,11 +42,9 @@ public class MainRenderer extends GamePageClass {
         camera = new Camera(width, height);
         camera.resetFor2d();
 
-        game = new SnakeGame();
         game.onSurfaceChanged(width, height);
 
-        renderer = new SnakeRenderer(this);
-        renderer.onSurfaceChanged();
+        renderer.onSurfaceChanged(game);
 
         rebuildTouchProcessors();
     }
@@ -96,23 +96,27 @@ public class MainRenderer extends GamePageClass {
         // 2 players * 4 buttons (touch behavior: same as Processing's touchStarted()).
         buttonTouchProcessors = new TouchProcessor[game.getPlayingUsers() * 4];
         int idx = 0;
-        for (int sid = 0; sid < game.getPlayingUsers(); sid++) {
-            final int snakeId = sid;
+        for (int snakeId = 0; snakeId < game.getPlayingUsers(); snakeId++) {
             for (int bid = 0; bid < 4; bid++) {
-                final int buttonId = bid;
-                TouchProcessor tp = new TouchProcessor(
-                        p -> game.getSnakes()[snakeId].getButtons()[buttonId].checkTouch(p.touchX, p.touchY),
-                        p -> {
-                            game.getSnakes()[snakeId].onButtonPressed(game, buttonId);
-                            return null;
-                        },
-                        p -> null,
-                        p -> null,
-                        this
-                );
-                tp.setPriority(-10); // leave room for debugger / other high-priority UI.
+                TouchProcessor tp = getTouchProcessor(bid, snakeId);
                 buttonTouchProcessors[idx++] = tp;
             }
         }
+    }
+
+    private TouchProcessor getTouchProcessor(int bid, int snakeId) {
+        final int buttonId = bid;
+        TouchProcessor tp = new TouchProcessor(
+                p -> game.getSnakes()[snakeId].getButtons()[buttonId].checkTouch(p.touchX, p.touchY),
+                p -> {
+                    game.getSnakes()[snakeId].onButtonPressed(game, buttonId);
+                    return null;
+                },
+                  p -> null,
+                p -> null,
+                this
+        );
+        tp.setPriority(-10); // leave room for debugger / other high-priority UI.
+        return tp;
     }
 }

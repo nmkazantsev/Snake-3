@@ -30,7 +30,7 @@ The intent is to keep gameplay behavior consistent with the original sketch whil
       - `GeneralPlatformBridge gl`
       - `GLConstBridge glc`
   - Lifecycle:
-    - `onSurfaceChanged(w,h)`: initializes `Camera`, `SnakeGame`, `SnakeRenderer`, touch processors
+    - `onSurfaceChanged(w,h)`: updates resolution metrics, rebuilds GPU assets, rebuilds touch processors (**does not reset gameplay state**)
     - `draw()`: clears screen, configures GL state for 2D sprites, renders current state, then advances `game.logic()`
 
 ### Game State / Logic
@@ -71,6 +71,9 @@ The current renderer does **not** redraw a full-screen `PImage` each frame. Inst
     - sync score text (only recreates score polygon when score string changes)
     - sync `controlsReversed` skin for buttons
     - draw mines, snakes (segments), explosions, buttons or winner overlay, score, foods
+  - On resize (`onSurfaceChanged`):
+    - rebuilds cached GPU assets
+    - redraws score texture immediately (text textures depend on current `sizx/ky` metrics; otherwise score can appear squeezed after resize)
 
 - `SnakeRenderAssets`
   - Holds cached `SimplePolygon` textures:
@@ -130,7 +133,23 @@ cd android
 
 - `Snake3.pde` does not contain the original `Snake.move()` method body (decompiler stub), so movement behavior is reconstructed.
 - GPU sprite approach is fast, but texture sizing must be conservative on mobile GPUs. The current code reduces UI/FX texture resolution to improve startup time and stability.
-- Known rendering bug (needs investigation): score and winner text tables may be invisible at runtime even though the polygons are created. Likely causes: GL state (blend/depth), text color state on `PImage`, or incorrect polygon draw sizing/placement when `saveMemory=true`. Repro: run a round until winner should show, observe no visible text.
+
+## Engine Drawing Semantics (Important for Ports)
+
+### Text (Desktop)
+
+On desktop, `PImage.text(...)` uses an `upperText` flag that changes how the `y` parameter is interpreted:
+
+- `setUpperText(true)`: `y` behaves like a baseline (best match for Processing-style placement).
+- `setUpperText(false)`: the implementation adds a per-line offset (about `textSize * 1.3`), which can push text outside small textures and make the uploaded texture appear blank.
+
+Score/winner textures in this repo use `setUpperText(true)` for correct visibility.
+
+### Ellipse (Desktop)
+
+Seal Engine `PImage.ellipse(cx, cy, rx, ry)` uses radii. Processing `ellipse(..., w, h)` uses diameters.
+
+When porting Processing loops that treat values as diameters, pass half sizes (e.g. `d * 0.5f`) to avoid clamped circles.
 
 ## Recent Commits
 
