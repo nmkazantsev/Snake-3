@@ -100,12 +100,14 @@ public final class SnakeRenderAssets {
         if (scorePoly != null) scorePoly.delete();
 
         final String captured = scoreText;
-        scorePoly = new SimplePolygon(unused -> redrawScore(captured), false, 0, page);
+        scorePoly = new SimplePolygon(unused -> redrawScore(captured), true, 0, page);
 
+        // Deterministic draw size in screen pixels (independent from UI_TEX_SCALE).
         float ts = sizx * 2.0f;
         float baseW = Math.max(8f, ts * 8f);
         float baseH = Math.max(8f, ts * 2.2f);
-        scoreDrawW = baseH; // rotated 90deg
+        // redrawScore rotates the texture by 90 degrees => draw size swaps.
+        scoreDrawW = baseH;
         scoreDrawH = baseW;
     }
 
@@ -167,6 +169,8 @@ public final class SnakeRenderAssets {
         float centerY = (y / 2.0f) - (sizx / 2.0f);
         float tlx = centerX - scoreDrawW * 0.5f;
         float tly = centerY - scoreDrawH * 0.5f;
+        tlx = Math.max(0f, Math.min(tlx, game.getX() - scoreDrawW));
+        tly = Math.max(0f, Math.min(tly, game.getY() - scoreDrawH));
         scorePoly.prepareAndDraw(tlx, tly, scoreDrawW, scoreDrawH, z);
     }
 
@@ -174,14 +178,23 @@ public final class SnakeRenderAssets {
         SimplePolygon poly = (snakeId == 0) ? winnerPoly0 : winnerPoly1;
         if (poly == null) return;
 
-        // Keep placement close to the original Processing calls:
-        // id0: text at (x - 300*kx, y - 100*ky)
-        // id1: rotate(180) then text at (-300*kx, -100*ky) => screen anchor around (300*kx, 100*ky)
-        float anchorX = (snakeId == 0) ? (game.getX() - (300.0f * game.getKx())) : (300.0f * game.getKx());
-        float anchorY = (snakeId == 0) ? (game.getY() - (100.0f * game.getKy())) : (100.0f * game.getKy());
+        // Original sketch draws text with default LEFT baseline. Convert that intent into a top-left rect.
+        float anchorX;
+        float baselineY;
+        if (snakeId == 0) {
+            anchorX = game.getX() - (300.0f * game.getKx());
+            baselineY = game.getY() - (100.0f * game.getKy());
+        } else {
+            anchorX = 300.0f * game.getKx();
+            baselineY = 100.0f * game.getKy();
+        }
 
-        // Draw with a small offset so the text isn't half off-screen.
-        poly.prepareAndDraw(anchorX, anchorY - winnerDrawH, winnerDrawW, winnerDrawH, z);
+        float tlx = anchorX;
+        float tly = baselineY - (winnerDrawH * 0.80f);
+        // Clamp into the visible screen to avoid disappearing text due to layout changes.
+        tlx = Math.max(0f, Math.min(tlx, game.getX() - winnerDrawW));
+        tly = Math.max(0f, Math.min(tly, game.getY() - winnerDrawH));
+        poly.prepareAndDraw(tlx, tly, winnerDrawW, winnerDrawH, z);
     }
 
     private SimplePolygon createSegmentTile(int snakeId, int bright) {
@@ -199,7 +212,7 @@ public final class SnakeRenderAssets {
             }
             img.rect(0, 0, sizx, sizy);
             return img;
-        }, false, 0, page);
+        }, true, 0, page);
     }
 
     private void buildFoodTiles() {
@@ -212,7 +225,7 @@ public final class SnakeRenderAssets {
             img.strokeWeight(3.0f * kx);
             img.rect(0, 0, sizx, sizy);
             return img;
-        }, false, 0, page);
+        }, true, 0, page);
 
         foodTileBlue = new SimplePolygon(unused -> {
             PImage img = new PImage(sizx, sizy);
@@ -223,7 +236,7 @@ public final class SnakeRenderAssets {
             img.strokeWeight(3.0f * kx);
             img.rect(0, 0, sizx, sizy);
             return img;
-        }, false, 0, page);
+        }, true, 0, page);
     }
 
     private void buildMineTiles() {
@@ -240,7 +253,7 @@ public final class SnakeRenderAssets {
                 img.ellipse(baseSize * 0.5f, baseSize * 0.5f, r, r);
             }
             return img;
-        }, false, 0, page);
+        }, true, 0, page);
 
         mineTileExplosion = new SimplePolygon(unused -> {
             PImage img = new PImage(baseSize, baseSize);
@@ -253,7 +266,7 @@ public final class SnakeRenderAssets {
                 img.ellipse(baseSize * 0.5f, baseSize * 0.5f, r, r);
             }
             return img;
-        }, false, 0, page);
+        }, true, 0, page);
     }
 
     private void buildExplosionTile() {
@@ -270,14 +283,14 @@ public final class SnakeRenderAssets {
                 img.ellipse(baseSize * 0.5f, baseSize * 0.5f, r, r);
             }
             return img;
-        }, false, 0, page);
+        }, true, 0, page);
     }
 
     private void buildButtonTiles() {
-        buttonWideP0 = new SimplePolygon(redrawButtonWide(50, 0, 0), false, 0, page);
-        buttonTallP0 = new SimplePolygon(redrawButtonTall(50, 0, 0), false, 0, page);
-        buttonWideP1 = new SimplePolygon(redrawButtonWide(0, 50, 0), false, 0, page);
-        buttonTallP1 = new SimplePolygon(redrawButtonTall(0, 50, 0), false, 0, page);
+        buttonWideP0 = new SimplePolygon(redrawButtonWide(50, 0, 0), true, 0, page);
+        buttonTallP0 = new SimplePolygon(redrawButtonTall(50, 0, 0), true, 0, page);
+        buttonWideP1 = new SimplePolygon(redrawButtonWide(0, 50, 0), true, 0, page);
+        buttonTallP1 = new SimplePolygon(redrawButtonTall(0, 50, 0), true, 0, page);
     }
 
     private Function<List<Object>, PImage> redrawButtonWide(int r, int g, int b) {
@@ -330,7 +343,12 @@ public final class SnakeRenderAssets {
         base.setAntiAlias(true);
         base.setUpperText(false);
         base.noStroke();
-        base.fill(255);
+        // "Table" background (semi-transparent black)
+        base.fill(0, 0, 0, 160);
+        float r = Math.max(6f, 12f * UI_TEX_SCALE);
+        base.roundRect(0, 0, baseTexW, baseTexH, r, r);
+        // Text color
+        base.fill(255, 255, 255, 255);
         base.textAlign(TextAlign.CENTER);
         base.textSize(ts * UI_TEX_SCALE);
         base.text(text, baseTexW * 0.5f, baseTexH * 0.75f);
@@ -360,12 +378,15 @@ public final class SnakeRenderAssets {
             img.setAntiAlias(true);
             img.setUpperText(false);
             img.noStroke();
-            img.fill(255);
+            img.fill(0, 0, 0, 160);
+            float r = Math.max(6f, 12f * UI_TEX_SCALE);
+            img.roundRect(0, 0, texW, texH, r, r);
+            img.fill(255, 255, 255, 255);
             img.textAlign(TextAlign.CENTER);
             img.textSize(texTs);
             img.text("WINNER", texW * 0.5f, texH * 0.75f);
             return img;
-        }, false, 0, page);
+        }, true, 0, page);
 
         winnerPoly1 = new SimplePolygon(unused -> {
             // Pre-rotate 180 degrees.
@@ -374,7 +395,10 @@ public final class SnakeRenderAssets {
             base.setAntiAlias(true);
             base.setUpperText(false);
             base.noStroke();
-            base.fill(255);
+            base.fill(0, 0, 0, 160);
+            float r = Math.max(6f, 12f * UI_TEX_SCALE);
+            base.roundRect(0, 0, texW, texH, r, r);
+            base.fill(255, 255, 255, 255);
             base.textAlign(TextAlign.CENTER);
             base.textSize(texTs);
             base.text("WINNER", texW * 0.5f, texH * 0.75f);
@@ -384,7 +408,7 @@ public final class SnakeRenderAssets {
             rot.setAntiAlias(true);
             rot.rotImage(base, texW * 0.5f, texH * 0.5f, 1.0f, Utils.radians(180.0f));
             return rot;
-        }, false, 0, page);
+        }, true, 0, page);
     }
 
     private static float pow2Clamped(float desired, int max) {

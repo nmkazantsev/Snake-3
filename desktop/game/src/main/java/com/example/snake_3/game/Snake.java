@@ -300,13 +300,7 @@ public final class Snake {
         if (segments[0].getPy() < minRow) segments[0].setPy(maxRow);
         if (segments[0].getPy() > maxRow) segments[0].setPy(minRow);
 
-        // Self collision
-        for (int i = 1; i < length; i++) {
-            if (segments[0].getPx() == segments[i].getPx() && segments[0].getPy() == segments[i].getPy()) {
-                died = true;
-                return;
-            }
-        }
+        // Self-crossing is allowed in this variant; only enemy collisions (and other hazards) can kill.
 
         checkFood(game);
         if (checkDied(game)) died = true;

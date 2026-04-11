@@ -130,4 +130,8 @@ cd android
 
 - `Snake3.pde` does not contain the original `Snake.move()` method body (decompiler stub), so movement behavior is reconstructed.
 - GPU sprite approach is fast, but texture sizing must be conservative on mobile GPUs. The current code reduces UI/FX texture resolution to improve startup time and stability.
+- Known rendering bug (needs investigation): score and winner text tables may be invisible at runtime even though the polygons are created. Likely causes: GL state (blend/depth), text color state on `PImage`, or incorrect polygon draw sizing/placement when `saveMemory=true`. Repro: run a round until winner should show, observe no visible text.
 
+## Recent Commits
+
+- (to be filled) Latest fix commit hash: TBD
