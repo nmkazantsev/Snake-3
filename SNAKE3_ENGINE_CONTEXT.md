@@ -134,4 +134,4 @@ cd android
 
 ## Recent Commits
 
-- (to be filled) Latest fix commit hash: TBD
+- Latest fix commit hash: `813aa29a10c3a2808d9a41de96562578926195c8`
