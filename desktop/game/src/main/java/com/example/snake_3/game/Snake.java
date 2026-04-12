@@ -200,6 +200,7 @@ public final class Snake {
     }
 
     public void createButtons(SnakeGame game) {
+        if (!game.isTouchControlsEnabled()) return;
         if (id == 0) {
             setButtonSet(game, game.getY() - (300.0f * game.getKy()));
         }
@@ -209,6 +210,7 @@ public final class Snake {
     }
 
     public void revertButtons(SnakeGame game) {
+        if (!game.isTouchControlsEnabled()) return;
         if (id == 1) {
             setButtonSet(game, game.getY() - (300.0f * game.getKy()));
         }

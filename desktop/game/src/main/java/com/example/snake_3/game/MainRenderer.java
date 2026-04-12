@@ -3,12 +3,14 @@ package com.example.snake_3.game;
 import com.nikitos.CoreRenderer;
 import com.nikitos.GamePageClass;
 import com.nikitos.main.camera.Camera;
+import com.nikitos.main.keyboard.KeyListener;
 import com.nikitos.main.shaders.Shader;
 import com.nikitos.main.shaders.default_adaptors.MainShaderAdaptor;
 import com.nikitos.main.touch.TouchProcessor;
 import com.nikitos.maths.Matrix;
 import com.nikitos.platformBridge.GLConstBridge;
 import com.nikitos.platformBridge.GeneralPlatformBridge;
+import com.nikitos.platformBridge.Platform;
 import com.nikitos.utils.Utils;
 
 public class MainRenderer extends GamePageClass {
@@ -17,6 +19,9 @@ public class MainRenderer extends GamePageClass {
     private SnakeGame game;
     private SnakeRenderer renderer;
     private TouchProcessor[] buttonTouchProcessors = new TouchProcessor[0];
+    private final boolean desktopPlatform;
+
+    private KeyListener[] desktopKeyListeners = new KeyListener[0];
 
     private final GeneralPlatformBridge gl;
     private final GLConstBridge glc;
@@ -33,8 +38,14 @@ public class MainRenderer extends GamePageClass {
         // Note: CoreRenderer.engine is initialized by the platform launcher before pages are used.
         glc = CoreRenderer.engine.getPlatformBridge().getGLConstBridge();
         gl = CoreRenderer.engine.getPlatformBridge().getGeneralPlatformBridge();
-        game = new SnakeGame();
-        renderer = new SnakeRenderer(this);
+        desktopPlatform = CoreRenderer.engine.getPlatform() == Platform.DESKTOP;
+
+        game = new SnakeGame(desktopPlatform);
+        renderer = new SnakeRenderer(this, desktopPlatform);
+
+        if (desktopPlatform) {
+            installDesktopKeyboardControls();
+        }
     }
 
     @Override
@@ -46,7 +57,9 @@ public class MainRenderer extends GamePageClass {
 
         renderer.onSurfaceChanged(game);
 
-        rebuildTouchProcessors();
+        if (!desktopPlatform) {
+            rebuildTouchProcessors();
+        }
     }
 
     @Override
@@ -81,6 +94,41 @@ public class MainRenderer extends GamePageClass {
 
     @Override
     public void onPause() {
+    }
+
+    private void installDesktopKeyboardControls() {
+        deleteDesktopKeyboardControls();
+
+        desktopKeyListeners = new KeyListener[]{
+                // Red snake (id=0): WASD
+                new KeyListener("W", k -> onDesktopDirKey(0, 0), this),
+                new KeyListener("D", k -> onDesktopDirKey(0, 1), this),
+                new KeyListener("S", k -> onDesktopDirKey(0, 2), this),
+                new KeyListener("A", k -> onDesktopDirKey(0, 3), this),
+
+                // Green snake (id=1): Arrow keys
+                new KeyListener("UP", k -> onDesktopDirKey(1, 0), this),
+                new KeyListener("RIGHT", k -> onDesktopDirKey(1, 1), this),
+                new KeyListener("DOWN", k -> onDesktopDirKey(1, 2), this),
+                new KeyListener("LEFT", k -> onDesktopDirKey(1, 3), this),
+        };
+    }
+
+    private Void onDesktopDirKey(int snakeId, int buttonIndex) {
+        if (game == null || !game.isInitialized()) return null;
+        Snake[] snakes = game.getSnakes();
+        if (snakes == null || snakeId < 0 || snakeId >= snakes.length) return null;
+        Snake s = snakes[snakeId];
+        if (s == null) return null;
+        s.onButtonPressed(game, buttonIndex);
+        return null;
+    }
+
+    private void deleteDesktopKeyboardControls() {
+        for (KeyListener l : desktopKeyListeners) {
+            if (l != null) l.delete();
+        }
+        desktopKeyListeners = new KeyListener[0];
     }
 
     private void rebuildTouchProcessors() {

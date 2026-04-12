@@ -4,13 +4,15 @@ import com.nikitos.GamePageClass;
 
 public final class SnakeRenderer {
     private final SnakeRenderAssets assets;
+    private final boolean desktopPlatform;
 
     private String lastScoreText = null;
     private boolean lastControlsReversed = false;
     private boolean assetsReady = false;
 
-    public SnakeRenderer(GamePageClass page) {
+    public SnakeRenderer(GamePageClass page, boolean desktopPlatform) {
         this.assets = new SnakeRenderAssets(page);
+        this.desktopPlatform = desktopPlatform;
     }
 
     public void onSurfaceChanged(SnakeGame game) {
@@ -66,7 +68,9 @@ public final class SnakeRenderer {
         // Buttons + winner overlays (Processing: buttons drawn after snakes)
         for (int si = 0; si < game.getPlayingUsers(); si++) {
             if (!game.isResetting()) {
-                assets.drawButtons(game, si, 0.30f);
+                if (!desktopPlatform) {
+                    assets.drawButtons(game, si, 0.30f);
+                }
             } else {
                 if (!game.getSnakes()[si].isDied()) {
                     assets.drawWinner(si, game, 0.35f);

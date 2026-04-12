@@ -1,6 +1,6 @@
 # PROJECT_MAP_FOR_CODEX (Application-Focused)
 
-This project map is optimized for an application/game that uses Seal Engine 3-M as a compiled dependency (`JAR`/`AAR`), where engine source code is usually not part of the application repository.
+This project map is optimized for working on an application/game that *uses* Seal Engine 3-M as a compiled dependency (JAR/AAR), where engine source code is typically not part of the application repository.
 
 If you are changing the engine itself (this repository), open `ENGINE_INTERNALS_MAP_FOR_CODEX.md` instead.
 
@@ -8,14 +8,11 @@ If you are changing the engine itself (this repository), open `ENGINE_INTERNALS_
 
 1. `README.md` (public API overview; contains a user-oriented manual for engine v3.2.1).
 2. This file: `PROJECT_MAP_FOR_CODEX.md` (how apps integrate the engine).
-3. For this repository specifically:
-   - `SNAKE3_ENGINE_CONTEXT.md` (how the Processing sketch was ported onto Seal Engine pages + GPU sprites)
-   - `Snake3.pde` (Processing reference behavior/source of truth)
-4. A real consumer project (pick the closest to your target):
+3. A real consumer project (pick the closest to your target):
    - Desktop demo launcher (engine sources included as Gradle modules): `~/IdeaProjects/Seal_Engine_3-M/Demo`
    - Android demo app (engine sources included as Gradle modules): `~/IdeaProjects/Seal_Engine_3-M/Demo-app`
    - Desktop application consuming engine as local JARs: `~/IdeaProjects/Seal_Engine_3-M/Tanki-7.1`
-5. Only if required: `ENGINE_INTERNALS_MAP_FOR_CODEX.md` (engine internals/source-level map). If that file is not present in the current repo checkout, use `ENGINE-README.md` for API details.
+4. Only if required: `ENGINE_INTERNALS_MAP_FOR_CODEX.md` (engine internals/source-level map).
 
 ## 2. App-Side Mental Model
 
@@ -53,6 +50,7 @@ Observed in `~/IdeaProjects/Seal_Engine_3-M/Demo/src/main/java/com/nikitos/Main.
   - `setDebug(boolean)`
   - `setStartPage(unused -> new YourStartPage())`
 - Create `DesktopLauncher(launcherParams)` and call `run()`.
+- Keyboard events are captured by the engine’s desktop launcher and routed into the engine keyboard system automatically (no app-side wiring required).
 
 ### 4.2 Android bootstrap (observed)
 
@@ -66,9 +64,10 @@ Observed in `~/IdeaProjects/Seal_Engine_3-M/Demo-app/app/src/main/java/com/examp
   - create `AndroidLauncher(androidLauncherParams)`
   - keep the `Engine`: `engine = androidLauncher.getEngine()`
   - set content view to the returned `GLSurfaceView`: `setContentView(androidLauncher.launch())`
-  - forward touch events into the engine input system:
+- forward touch events into the engine input system:
     - `TouchProcessor.onTouch(new AndroidMotionEventAdapter(event))`
 - In `Activity.onPause()` / `Activity.onResume()` call `engine.onPause()` / `engine.onResume()`.
+- Keyboard: if a hardware keyboard is present, the engine’s returned `GLSurfaceView` is focusable and forwards key events into the engine keyboard system. Ensure the view has focus if your Activity contains other focusable views.
 
 ## 5. “Shared Game Module” Pattern (Recommended for real apps)
 
@@ -76,7 +75,6 @@ The demos show a high-leverage pattern for cross-platform code reuse:
 
 - Put gameplay/pages in a separate module (often called `game`).
 - Desktop and Android “host” projects depend on `game` and only decide which start page to run.
-- In generator-created workspaces, this shared module is located at `desktop/game`, and the Android project includes it through `../desktop/game`.
 
 Observed examples:
 
@@ -114,6 +112,12 @@ When asked to modify an application built on Seal Engine, start in this order:
 - Android first: verify `MotionEvent` is forwarded to `TouchProcessor` using the platform adapter (see Demo-app).
 - Game logic next: find where `TouchProcessor` instances are registered and validate their hitbox logic and coordinate assumptions.
 
+### 7.4 Keyboard input
+
+- In game code: use `KeyListener` / `KeyReleasedListener` (bind by key name, or use `anyKey(...)`).
+- For key combinations: use `KeyComboListener` (its callback is called when all specified keys are pressed together, in any order).
+- For polling: use `KeyboardProcessor.isKeyPressed(...)`, `KeyboardProcessor.getKeysPressedNumber()`, `KeyboardProcessor.getKeyPresedList()`.
+
 ### 7.3 Rendering / shader / asset load failures
 
 - Start from the page code that references the asset path string.
@@ -132,37 +136,4 @@ Open the engine internals map only when:
 
 - you are explicitly tasked with changing Seal Engine 3-M itself, or
 - an issue cannot be resolved through public API usage (e.g., platform adapter bug, GPU resource lifecycle bug, shader binding bug), and you must trace engine implementation.
-- if you need API descriptions, start with `README.md`; only move to the internals map if something is still unclear.
-
-## 10. Snake-3 Port Notes (This Repo)
-
-This repository is a Seal Engine port of `Snake3.pde`. The current implementation is intentionally close to the sketch, but it relies on engine-specific drawing semantics.
-
-### 10.1 Text rendering gotcha (Desktop)
-
-Engine desktop `PImage` text has two Y-position modes controlled by the `upperText` flag:
-
-- If `PImage.setUpperText(true)`, the provided `y` is treated like a baseline (matches Processing-style placement better).
-- If `PImage.setUpperText(false)`, the desktop implementation adds a line-advance offset (roughly `textSize * 1.3`) which can push text *outside* small textures.
-
-For score / winner textures in this project, the fix is to use `setUpperText(true)` when generating the texture, otherwise the texture may upload as “blank”.
-
-### 10.2 Ellipse sizing gotcha (Desktop)
-
-Seal Engine `PImage.ellipse(cx, cy, rx, ry)` uses **radii** (`rx/ry`), while Processing’s `ellipse(x, y, w, h)` uses **diameters** (`w/h`).
-
-When porting Processing code that loops over diameters, pass half sizes to the engine:
-
-- Processing diameter `d` ⇒ engine radius `d * 0.5`
-
-Otherwise circles will be drawn larger than the `PImage` and appear clamped.
-
-### 10.3 Recent alignment changes vs `Snake3.pde`
-
-- Explosion FX matches the sketch: half-cell colored squares (not a single smooth circle sprite).
-- Mines use an explosion-color ramp that depends on explosion progress (like the sketch).
-- Score + winner are rendered as plain white text on transparent background (no extra “table”/box).
-- Buttons stretch edge-to-edge; button hitboxes are inclusive to avoid “dead seams” on borders.
-- GPU assets (`SimplePolygon`) are deleted and rebuilt on resize to avoid stale/clamped textures.
-- `GamePageClass.onSurfaceChanged(...)` only updates resolution-dependent metrics and rebuilds GPU/UI; gameplay state is initialized once and must not reset on window resize/reopen.
-- Text polygons (score/winner) must be regenerated after resize because their texture size depends on the new metrics; otherwise they can look squeezed.
+- if you need API descritption use README file, only if something stay unclear read engine intrernals map

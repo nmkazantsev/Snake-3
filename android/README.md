@@ -1,9 +1,10 @@
-Cross-platform Seal Engine 3-M overview and API reference.
+The first cross-platform version of https://github.com/nmkazantsev/seal_engine.
 
-The public API is intended to stay aligned across Android, Windows, and Linux targets.
+All features are suppoerted. Unified for all platforms (Android, Windows, Linux) api was not changed.
 
-Example apps:
+See example apps:
 Desktop: https://github.com/nmkazantsev/Demo-launcher
+
 Android: https://github.com/nmkazantsev/Demo-app
 
 
@@ -18,13 +19,13 @@ Android: https://github.com/nmkazantsev/Demo-app
 
 ---
 
-## Руководство по созданию страницы движка
-1. Создайте реализацию `GamePageClass`.
-2. В конструкторе, либо заранее, загружайте тяжелые объекты: меши, изображения, шейдеры и шрифты.
-3. В `onSurfaceChanged(...)` пересоздавайте камеру, frame buffers и другие объекты, которые прямо или косвенно зависят от размеров экрана.
-4. При отрисовке кадра обычно нужно применить шейдер, матрицу проекции и камеру, а затем отрисовать сцену.
-5. Для корректной адаптации не кешируйте границы в обработчиках касаний: вычисляйте их динамически, чтобы изменение размера экрана не ломало ввод.
-6. Рекомендуется разделять контекст по страницам и избегать лишних статических объектов: неаккуратное использование легко приводит к утечкам видеопамяти. Для очистки ресурсов вызывайте соответствующие методы удаления.
+## руководство по созданию страницы движка
+1. создать имплементацию ``GamePageClass``.
+2. В конструкторе (или заранее) загружать тяжелые объекты, такие, как меши и картинки, а также шейдеры и шрифты.
+3. в onSurfaceChanged пересоздавать камеру, frame buffers и другие объекты, которые прямо или косвенно зависят от разрешения экрана. 
+4. при отрисовке каждый кадр нужно: подключить шейдер, подключить матрицу проекции и камеру. Отрисовать сцену.
+5. в целях адаптации, обработчик касаний не должен ни где кешировать границы, они должны вычисляться динамически, чтобы изменение размеров экрана не повлияло на его работу.
+6. рекомендуется разделять контекст на страницы и избегать использования статических объектов, так как неаккуратное обращение с ними спровоцирует утечку видеопамяти. Для их удаления не забывать запускать метод очисти видеопамяти.
 
 ## 1. Ядро движка и управление страницами
 
@@ -635,6 +636,51 @@ img.text("Hello, World!", 100, 100);
 
 ### MyMotionEvent
 Интерфейс, абстрагирующий платформенное событие касания. Константы `ACTION_DOWN`, `ACTION_UP`, `ACTION_MOVE`, `ACTION_POINTER_DOWN`, `ACTION_POINTER_UP`. Пользователь не реализует напрямую.
+
+---
+
+## 12.1 Ввод (клавиатура)
+
+Клавиатурный ввод реализован через слушатели нажатия/удержания/отпускания клавиш. Коллбэки буферизуются и выполняются в основном (рендер) потоке.
+
+### KeyListener (нажатие + удержание)
+
+**Конструкторы:**
+- `KeyListener(String key, Function<String, Void> keyPressedCallback, GamePageClass creatorPage)` – привязка к одной клавише.
+- `KeyListener(String[] keys, Function<String, Void> keyPressedCallback, GamePageClass creatorPage)` – привязка к нескольким клавишам (срабатывает на любую из них).
+
+**Дополнительно:**
+- `static KeyListener anyKey(Function<String, Void> keyPressedCallback, GamePageClass creatorPage)` – срабатывает на любую клавишу.
+- `KeyListener setHoldListener(long timeoutMs, Function<String, Void> keyHoldCallback)` – коллбэк удержания: вызывается один раз, если клавиша удерживается дольше `timeoutMs`.
+- `void block()`, `void unblock()`, `void delete()`
+
+### KeyReleasedListener (отпускание)
+
+**Конструкторы:**
+- `KeyReleasedListener(String key, Function<String, Void> keyReleasedCallback, GamePageClass creatorPage)`
+- `KeyReleasedListener(String[] keys, Function<String, Void> keyReleasedCallback, GamePageClass creatorPage)`
+
+**Дополнительно:**
+- `static KeyReleasedListener anyKey(Function<String, Void> keyReleasedCallback, GamePageClass creatorPage)`
+- `void block()`, `void unblock()`, `void delete()`
+
+### KeyboardProcessor (состояние клавиш)
+
+**Публичные методы:**
+- `static boolean isKeyPressed(String key)` – нажата ли клавиша сейчас.
+- `static int getKeysPressedNumber()` – сколько клавиш нажато сейчас.
+- `static List<String> getKeyPresedList()` – список нажатых клавиш сейчас (имена нормализованы, uppercase).
+
+### KeyComboListener (комбинации клавиш)
+
+Слушатель, у которого коллбэк вызывается только если **все** указанные клавиши нажаты одновременно (порядок нажатия не важен). Коллбэк вызывается **один раз** на активацию комбинации; после отпускания любой клавиши комбинация сбрасывается и может сработать снова.
+
+**Конструкторы:**
+- `KeyComboListener(String[] keys, Function<String, Void> comboPressedCallback, GamePageClass creatorPage)`
+- `KeyComboListener(String key1, String key2, Function<String, Void> comboPressedCallback, GamePageClass creatorPage)`
+
+**Аргумент коллбэка:** строка с названием комбинации (нормализовано, `KEY1+KEY2+...`, отсортировано по имени).
+- `void block()`, `void unblock()`, `void delete()`
 
 ---
 

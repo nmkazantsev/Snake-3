@@ -11,6 +11,7 @@ import com.nikitos.utils.Utils;
  */
 public final class SnakeGame {
     private final int playingUsers = 2;
+    private final boolean desktopPlatform;
 
     private boolean initialized = false;
 
@@ -39,6 +40,10 @@ public final class SnakeGame {
     private final Mine[] mines = new Mine[50];
     private int mineLen = 0;
 
+    public SnakeGame(boolean desktopPlatform) {
+        this.desktopPlatform = desktopPlatform;
+    }
+
     public void onSurfaceChanged(int width, int height) {
         updateMetrics(width, height);
 
@@ -49,7 +54,9 @@ public final class SnakeGame {
             initialized = true;
         } else {
             // Recompute UI layout in the current "mode" (normal vs reverted) using the new metrics.
-            applyButtonsLayoutForCurrentState();
+            if (isTouchControlsEnabled()) {
+                applyButtonsLayoutForCurrentState();
+            }
             clampEntitiesToPlayfield();
         }
     }
@@ -180,7 +187,7 @@ public final class SnakeGame {
         if (Utils.millis() - reverseStarted > revTime) {
             controlsReversed = false;
         }
-        if (Utils.millis() - buttonsReverted > butRevTime) {
+        if (isTouchControlsEnabled() && Utils.millis() - buttonsReverted > butRevTime) {
             for (Snake s : snakes) {
                 if (s != null) s.createButtons(this);
             }
@@ -255,6 +262,13 @@ public final class SnakeGame {
      * Clamped so the playfield never overlaps the current button areas.
      */
     public int[] getPlayfieldRowRange() {
+        int cols = Math.max(1, Utils.parseInt(x / sizx));
+        int rows = Math.max(1, Utils.parseInt(y / sizy));
+
+        if (!isTouchControlsEnabled()) {
+            return new int[]{0, rows - 1};
+        }
+
         // Determine top/bottom reserved areas from the current button rectangles.
         float reservedTopMax = 0f;
         float reservedBottomMin = y;
@@ -272,9 +286,6 @@ public final class SnakeGame {
                 }
             }
         }
-
-        int cols = Math.max(1, Utils.parseInt(x / sizx));
-        int rows = Math.max(1, Utils.parseInt(y / sizy));
 
         int minRow = (int) Math.ceil(reservedTopMax / sizy);
         int maxRow = (int) Math.floor((reservedBottomMin - sizy) / sizy);
@@ -298,6 +309,10 @@ public final class SnakeGame {
         if (cols < 1) cols = 1;
 
         return new int[]{minRow, maxRow};
+    }
+
+    public boolean isTouchControlsEnabled() {
+        return !desktopPlatform;
     }
 
     public int getGridCols() {
