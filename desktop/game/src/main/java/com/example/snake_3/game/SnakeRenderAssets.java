@@ -107,7 +107,16 @@ public final class SnakeRenderAssets {
     public void setControlsReversed(boolean controlsReversed) {
         if (this.controlsReversed == controlsReversed) return;
         this.controlsReversed = controlsReversed;
-        // Button textures depend on this flag.
+        // Button and snake-segment textures depend on this flag.
+        for (int sid = 0; sid < segmentTile.length; sid++) {
+            for (int bi = 0; bi < segmentTile[sid].length; bi++) {
+                SimplePolygon poly = segmentTile[sid][bi];
+                if (poly != null) {
+                    poly.setRedrawNeeded(true);
+                    poly.redrawNow();
+                }
+            }
+        }
         if (buttonWideP0 != null) buttonWideP0.setRedrawNeeded(true);
         if (buttonTallP0 != null) buttonTallP0.setRedrawNeeded(true);
         if (buttonWideP1 != null) buttonWideP1.setRedrawNeeded(true);
@@ -303,6 +312,20 @@ public final class SnakeRenderAssets {
                 img.fill(0.0f, bright + 150, 0.0f);
             }
             img.rect(0, 0, tw, th);
+
+            if (controlsReversed) {
+                float outerSw = Math.max(3f, Math.min(tw, th) * 0.11f);
+                img.stroke(255.0f, 0.0f, 0.0f, 255.0f);
+                img.strokeWeight(outerSw);
+                float outerInset = outerSw * 0.5f;
+                img.rect(outerInset, outerInset, tw - outerSw, th - outerSw);
+
+                float innerSw = Math.max(2f, Math.min(tw, th) * 0.05f);
+                img.stroke(255.0f, 90.0f, 90.0f, 255.0f);
+                img.strokeWeight(innerSw);
+                float innerInset = innerSw * 0.5f;
+                img.rect(innerInset, innerInset, tw - innerSw, th - innerSw);
+            }
             return img;
         }, true, 0, page);
     }
