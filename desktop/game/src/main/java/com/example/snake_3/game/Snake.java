@@ -21,24 +21,19 @@ public final class Snake {
 
     public void init(SnakeGame game) {
         chosenDirection = 0;
-
-        int headY = 20;
-        int headX = 0;
-        if (id == 0) {
-            chosenDirection = 2;
-            headX = 1;
-        }
-        if (id == 1) {
-            chosenDirection = 0;
-            headX = 39;
-            buttonsInverted = true;
-        }
-
-        segments[0] = new SnakeSegment(headX, headY);
+        segments[0] = createSpawnHead(game);
         length = 1;
         addSegments(game, 5);
         for (int i = 0; i < buttons.length; i++) buttons[i] = new SnakeButton();
         createButtons(game);
+
+        if (id == 0) {
+            chosenDirection = 2;
+        }
+        if (id == 1) {
+            chosenDirection = 0;
+            buttonsInverted = true;
+        }
     }
 
     public void onButtonPressed(SnakeGame game, int buttonIndex) {
@@ -154,23 +149,17 @@ public final class Snake {
                 }
                 if (type == 7) {
                     game.addMine(segments[0].getPx(), segments[0].getPy());
-                    int cols = game.getGridCols();
-                    int[] rr = game.getPlayfieldRowRange();
-                    int minRow = rr[0];
-                    int maxRow = rr[1];
                     do {
-                        segments[0].setPx(Utils.parseInt(Utils.random(0.0f, (float) cols)));
-                        segments[0].setPy(Utils.parseInt(Utils.random((float) minRow, (float) (maxRow + 1))));
+                        segments[0].setPx(game.getRandomPlayableCol());
+                        segments[0].setPy(game.getRandomPlayableRow());
                     } while (checkSegmentVsOthers(game));
                 }
                 if (type == 8) {
                     explosion = new Explosion(segments[0].getPx() + 0.5f, segments[0].getPy() + 0.5f);
                 }
                 if (type == 9) {
-                    int cols = game.getGridCols();
-                    int[] rr = game.getPlayfieldRowRange();
-                    segments[0].setPx(Utils.parseInt(Utils.random(0.0f, (float) cols)));
-                    segments[0].setPy(Utils.parseInt(Utils.random((float) rr[0], (float) (rr[1] + 1))));
+                    segments[0].setPx(game.getRandomPlayableCol());
+                    segments[0].setPy(game.getRandomPlayableRow());
                     addSegments(game, 20);
                     speed += 2.0f;
                 }
@@ -254,18 +243,14 @@ public final class Snake {
     }
 
     public void reset(SnakeGame game) {
-        int headY = 20;
-        int headX = 0;
         if (id == 0) {
             chosenDirection = 2;
-            headX = 1;
         }
         if (id == 1) {
-            headX = 39;
             chosenDirection = 0;
         }
 
-        segments[0] = new SnakeSegment(headX, headY);
+        segments[0] = createSpawnHead(game);
         for (int i = 1; i < segments.length; i++) segments[i] = null;
         length = 1;
         addSegments(game, 5);
@@ -319,6 +304,12 @@ public final class Snake {
             explosion.updateSize(game);
             if (explosion.checkFinished()) explosion = null;
         }
+    }
+
+    private SnakeSegment createSpawnHead(SnakeGame game) {
+        int headX = (id == 0) ? game.getLeftSpawnCol() : game.getRightSpawnCol();
+        int headY = game.getDefaultSpawnRow();
+        return new SnakeSegment(headX, headY);
     }
 
     public int getId() {

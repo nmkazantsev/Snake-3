@@ -4,14 +4,19 @@ import com.nikitos.utils.Utils;
 
 /**
  * Engine-native port of the original Processing Snake3 sketch.
- *
+ * <p>
  * Notes:
  * - The original sketch advanced logic after drawing; MainRenderer preserves that order.
  * - Playfield is dynamically clamped to never overlap the button areas.
  */
 public final class SnakeGame {
+    private static final int MOBILE_MAX_SQUARES = 40;
+    private static final int DESKTOP_MAX_SQUARES = 80;
+    private static final float DEFAULT_SPAWN_ROW_RATIO = 0.28f;
+
     private final int playingUsers = 2;
     private final boolean desktopPlatform;
+    private final int maxSquares;
 
     private boolean initialized = false;
 
@@ -42,6 +47,7 @@ public final class SnakeGame {
 
     public SnakeGame(boolean desktopPlatform) {
         this.desktopPlatform = desktopPlatform;
+        this.maxSquares = desktopPlatform ? DESKTOP_MAX_SQUARES : MOBILE_MAX_SQUARES;
     }
 
     public void onSurfaceChanged(int width, int height) {
@@ -72,7 +78,7 @@ public final class SnakeGame {
 
         ky = y / 1280.0f;
         kx = x / 720.0f;
-        sizx = x / 40.0f;
+        sizx = x / Math.max(1.0f, (float) maxSquares);
         sizy = sizx;
     }
 
@@ -311,8 +317,49 @@ public final class SnakeGame {
         return new int[]{minRow, maxRow};
     }
 
+    public int getMinPlayableCol() {
+        return (getGridCols() > 1) ? 1 : 0;
+    }
+
+    public int getMaxPlayableCol() {
+        return Math.max(getMinPlayableCol(), getGridCols() - 1);
+    }
+
+    public int getDefaultSpawnRow() {
+        int[] rowRange = getPlayfieldRowRange();
+        int playableRows = Math.max(0, rowRange[1] - rowRange[0]);
+        return rowRange[0] + Math.round(playableRows * DEFAULT_SPAWN_ROW_RATIO);
+    }
+
+    public int getLeftSpawnCol() {
+        return Math.min(getMinPlayableCol() + 1, getMaxPlayableCol());
+    }
+
+    public int getRightSpawnCol() {
+        return getMaxPlayableCol();
+    }
+
+    public int getRandomPlayableCol() {
+        int minCol = getMinPlayableCol();
+        int maxCol = getMaxPlayableCol();
+        if (maxCol <= minCol) return minCol;
+        return Utils.parseInt(Utils.random((float) minCol, (float) (maxCol + 1)));
+    }
+
+    public int getRandomPlayableRow() {
+        int[] rowRange = getPlayfieldRowRange();
+        int minRow = rowRange[0];
+        int maxRow = rowRange[1];
+        if (maxRow <= minRow) return minRow;
+        return Utils.parseInt(Utils.random((float) minRow, (float) (maxRow + 1)));
+    }
+
     public boolean isTouchControlsEnabled() {
         return !desktopPlatform;
+    }
+
+    public int getMaxSquares() {
+        return maxSquares;
     }
 
     public int getGridCols() {
