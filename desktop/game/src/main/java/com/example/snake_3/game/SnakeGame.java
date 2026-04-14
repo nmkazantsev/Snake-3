@@ -12,6 +12,7 @@ import com.nikitos.utils.Utils;
 public final class SnakeGame {
     private static final int MOBILE_MAX_SQUARES = 40;
     private static final int DESKTOP_MAX_SQUARES = 80;
+    private static final int INITIAL_FOOD_COUNT = 2;
     private static final float DEFAULT_SPAWN_ROW_RATIO = 0.28f;
 
     private final int playingUsers = 2;
@@ -41,7 +42,7 @@ public final class SnakeGame {
     private final long butRevTime = 5_000L;
 
     private final Snake[] snakes = new Snake[4];
-    private Food[] foods = new Food[1];
+    private Food[] foods = new Food[INITIAL_FOOD_COUNT];
     private final Mine[] mines = new Mine[50];
     private int mineLen = 0;
 
@@ -84,7 +85,7 @@ public final class SnakeGame {
 
     private void initGame() {
         mineLen = 0;
-        foods = new Food[1];
+        foods = new Food[INITIAL_FOOD_COUNT];
         resetting = false;
         controlsReversed = false;
         reverseStarted = 0L;
@@ -102,10 +103,9 @@ public final class SnakeGame {
     }
 
     private void applyButtonsLayoutForCurrentState() {
-        boolean revertedActive = Utils.millis() - buttonsReverted <= butRevTime;
         for (Snake s : snakes) {
             if (s == null) continue;
-            if (revertedActive) s.revertButtons(this);
+            if (isButtonsRevertedActive()) s.revertButtons(this);
             else s.createButtons(this);
         }
     }
@@ -193,10 +193,11 @@ public final class SnakeGame {
         if (Utils.millis() - reverseStarted > revTime) {
             controlsReversed = false;
         }
-        if (isTouchControlsEnabled() && Utils.millis() - buttonsReverted > butRevTime) {
+        if (isTouchControlsEnabled() && buttonsReverted > 0L && !isButtonsRevertedActive()) {
             for (Snake s : snakes) {
                 if (s != null) s.createButtons(this);
             }
+            buttonsReverted = 0L;
         }
     }
 
@@ -444,6 +445,10 @@ public final class SnakeGame {
 
     public void setButtonsReverted(long buttonsReverted) {
         this.buttonsReverted = buttonsReverted;
+    }
+
+    public boolean isButtonsRevertedActive() {
+        return buttonsReverted > 0L && Utils.millis() - buttonsReverted <= butRevTime;
     }
 
     public boolean isInitialized() {

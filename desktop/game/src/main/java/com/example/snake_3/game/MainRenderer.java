@@ -116,6 +116,9 @@ public class MainRenderer extends GamePageClass {
 
     private Void onDesktopDirKey(int snakeId, int buttonIndex) {
         if (game == null || !game.isInitialized()) return null;
+        if (game.isButtonsRevertedActive()) {
+            snakeId = (snakeId + 1) % game.getPlayingUsers();
+        }
         Snake[] snakes = game.getSnakes();
         if (snakes == null || snakeId < 0 || snakeId >= snakes.length) return null;
         Snake s = snakes[snakeId];

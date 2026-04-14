@@ -3,6 +3,9 @@ package com.example.snake_3.game;
 import com.nikitos.utils.Utils;
 
 public final class Snake {
+    private static final float MIN_SPEED = 10.0f;
+    private static final float INITIAL_SPEED = 13;
+
     private final int id;
     private int chosenDirection;
     private long prevMoved = 0L;
@@ -12,7 +15,7 @@ public final class Snake {
     private final SnakeSegment[] segments = new SnakeSegment[500];
     private final SnakeButton[] buttons = new SnakeButton[4];
     private boolean died = false;
-    private float speed = 10.0f;
+    private float speed = INITIAL_SPEED;
     private Explosion explosion = null;
 
     public Snake(int id) {
@@ -113,10 +116,10 @@ public final class Snake {
                     deleteSegments(Utils.parseInt(Utils.random(2.0f, 4.0f)));
                 }
                 if (type == 3) {
-                    speed += Utils.random(1.0f, 5.0f);
+                    increaseSpeed(Utils.random(1.0f, 5.0f));
                 }
                 if (type == 4) {
-                    speed -= Utils.random(1.0f, 5.0f);
+                    decreaseSpeed(Utils.random(1.0f, 5.0f));
                 }
                 if (type == 5) {
                     Snake other = game.getSnakes()[(id + 1) % game.getSnakes().length];
@@ -161,7 +164,7 @@ public final class Snake {
                     segments[0].setPx(game.getRandomPlayableCol());
                     segments[0].setPy(game.getRandomPlayableRow());
                     addSegments(game, 20);
-                    speed += 2.0f;
+                    increaseSpeed(2.0f);
                 }
                 if (type == 10) {
                     game.setControlsReversed(true);
@@ -256,7 +259,7 @@ public final class Snake {
         addSegments(game, 5);
         if (!died) score++;
         died = false;
-        speed = 10.0f;
+        speed = INITIAL_SPEED;
         explosion = null;
     }
 
@@ -264,7 +267,7 @@ public final class Snake {
         if (died) return;
 
         long now = Utils.millis();
-        float interval = (1000.0f / speed) / Math.max(0.1f, game.getTimek());
+        float interval = 1000.0f / Math.max(MIN_SPEED, speed);
         if (now - prevMoved < interval) return;
         prevMoved = now;
 
@@ -310,6 +313,14 @@ public final class Snake {
         int headX = (id == 0) ? game.getLeftSpawnCol() : game.getRightSpawnCol();
         int headY = game.getDefaultSpawnRow();
         return new SnakeSegment(headX, headY);
+    }
+
+    private void increaseSpeed(float delta) {
+        speed += delta;
+    }
+
+    private void decreaseSpeed(float delta) {
+        speed = Math.max(MIN_SPEED, speed - delta);
     }
 
     public int getId() {
