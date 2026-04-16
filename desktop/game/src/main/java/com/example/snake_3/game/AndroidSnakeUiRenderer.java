@@ -1,5 +1,8 @@
 package com.example.snake_3.game;
 
+import com.example.snake_3.game.render.vm.GameViewModel;
+import com.example.snake_3.game.render.vm.HudViewModel;
+
 final class AndroidSnakeUiRenderer implements SnakeUiRenderer {
     private static final float BUTTON_Z = 5.30f;
     private static final float WINNER_Z = 5.35f;
@@ -9,45 +12,40 @@ final class AndroidSnakeUiRenderer implements SnakeUiRenderer {
     private boolean lastControlsReversed = false;
 
     @Override
-    public void onSurfaceChanged(SnakeGame game, SnakeRenderAssets assets) {
-        lastControlsReversed = game.isControlsReversed();
+    public void onSurfaceChanged(GameViewModel viewModel, SnakeRenderAssets assets) {
+        lastControlsReversed = viewModel.hud().controlsReversed();
         assets.setControlsReversed(lastControlsReversed);
 
-        lastScoreText = buildScoreText(game);
+        lastScoreText = viewModel.hud().scoreText();
         assets.setScoreText(lastScoreText);
     }
 
     @Override
-    public void render(SnakeGame game, SnakeRenderAssets assets) {
-        syncUiState(game, assets);
+    public void render(GameViewModel viewModel, SnakeRenderAssets assets) {
+        syncUiState(viewModel, assets);
 
-        for (int si = 0; si < game.getPlayingUsers(); si++) {
-            if (!game.isResetting()) {
-                assets.drawButtons(game, si, BUTTON_Z);
-            } else {
-                if (!game.getSnakes()[si].isDied()) {
-                    assets.drawWinner(si, game, WINNER_Z);
+        HudViewModel hud = viewModel.hud();
+        if (!hud.resetting()) {
+            assets.drawButtons(viewModel.buttons(), BUTTON_Z);
+        } else {
+            for (int snakeId = 0; snakeId < hud.winners().length; snakeId++) {
+                if (hud.winners()[snakeId]) {
+                    assets.drawWinner(snakeId, viewModel, WINNER_Z);
                 }
             }
         }
 
-        assets.drawScore(game, SCORE_Z);
+        assets.drawScore(viewModel, SCORE_Z);
     }
 
-    private void syncUiState(SnakeGame game, SnakeRenderAssets assets) {
-        if (lastControlsReversed != game.isControlsReversed()) {
-            lastControlsReversed = game.isControlsReversed();
+    private void syncUiState(GameViewModel viewModel, SnakeRenderAssets assets) {
+        if (lastControlsReversed != viewModel.hud().controlsReversed()) {
+            lastControlsReversed = viewModel.hud().controlsReversed();
             assets.setControlsReversed(lastControlsReversed);
         }
-
-        String scoreText = buildScoreText(game);
-        if (!scoreText.equals(lastScoreText)) {
-            lastScoreText = scoreText;
-            assets.setScoreText(scoreText);
+        if (!viewModel.hud().scoreText().equals(lastScoreText)) {
+            lastScoreText = viewModel.hud().scoreText();
+            assets.setScoreText(lastScoreText);
         }
-    }
-
-    private String buildScoreText(SnakeGame game) {
-        return game.getSnakes()[1].getScore() + ":" + game.getSnakes()[0].getScore();
     }
 }

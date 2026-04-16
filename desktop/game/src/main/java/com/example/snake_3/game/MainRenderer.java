@@ -1,12 +1,17 @@
 package com.example.snake_3.game;
 
+import com.example.snake_3.game.app.SnakeGameController;
+import com.example.snake_3.game.core.command.GameCommand;
+import com.example.snake_3.game.infra.SystemClock;
+import com.example.snake_3.game.infra.UtilsRandomSource;
+import com.example.snake_3.game.input.DesktopInputAdapter;
+import com.example.snake_3.game.input.TouchInputAdapter;
+import com.example.snake_3.game.render.vm.GameViewModel;
 import com.nikitos.CoreRenderer;
 import com.nikitos.GamePageClass;
 import com.nikitos.main.camera.Camera;
-import com.nikitos.main.keyboard.KeyListener;
 import com.nikitos.main.shaders.Shader;
 import com.nikitos.main.shaders.default_adaptors.MainShaderAdaptor;
-import com.nikitos.main.touch.TouchProcessor;
 import com.nikitos.maths.Matrix;
 import com.nikitos.platformBridge.GLConstBridge;
 import com.nikitos.platformBridge.GeneralPlatformBridge;
@@ -14,17 +19,16 @@ import com.nikitos.platformBridge.Platform;
 import com.nikitos.utils.Utils;
 
 public class MainRenderer extends GamePageClass {
-    private Camera camera;
     private final Shader shader;
-    private SnakeGame game;
-    private SnakeRenderer renderer;
-    private TouchProcessor[] buttonTouchProcessors = new TouchProcessor[0];
     private final boolean desktopPlatform;
-
-    private KeyListener[] desktopKeyListeners = new KeyListener[0];
-
     private final GeneralPlatformBridge gl;
     private final GLConstBridge glc;
+    private final SnakeGameController controller;
+    private final SnakeRenderer renderer;
+    private final DesktopInputAdapter desktopInputAdapter;
+    private final TouchInputAdapter touchInputAdapter;
+
+    private Camera camera;
 
     public MainRenderer() {
         shader = new Shader(
@@ -34,17 +38,18 @@ public class MainRenderer extends GamePageClass {
                 new MainShaderAdaptor()
         );
 
-        // Engine GL bridge (requested: cached fields).
-        // Note: CoreRenderer.engine is initialized by the platform launcher before pages are used.
         glc = CoreRenderer.engine.getPlatformBridge().getGLConstBridge();
         gl = CoreRenderer.engine.getPlatformBridge().getGeneralPlatformBridge();
         desktopPlatform = CoreRenderer.engine.getPlatform() == Platform.DESKTOP;
 
-        game = new SnakeGame(desktopPlatform);
+        controller = new SnakeGameController(desktopPlatform, new SystemClock(), new UtilsRandomSource());
         renderer = new SnakeRenderer(this, desktopPlatform);
 
-        if (desktopPlatform) {
-            installDesktopKeyboardControls();
+        desktopInputAdapter = desktopPlatform ? new DesktopInputAdapter(this, this::enqueueCommand) : null;
+        touchInputAdapter = desktopPlatform ? null : new TouchInputAdapter(this, this::enqueueCommand);
+
+        if (desktopInputAdapter != null) {
+            desktopInputAdapter.install();
         }
     }
 
@@ -53,39 +58,41 @@ public class MainRenderer extends GamePageClass {
         camera = new Camera(width, height);
         camera.resetFor2d();
 
-        game.onSurfaceChanged(width, height);
+        controller.onSurfaceChanged(width, height);
+        GameViewModel viewModel = controller.getViewModel();
+        if (viewModel != null) {
+            renderer.onSurfaceChanged(viewModel);
+        }
 
-        renderer.onSurfaceChanged(game);
-
-        if (!desktopPlatform) {
-            rebuildTouchProcessors();
+        if (touchInputAdapter != null) {
+            touchInputAdapter.sync(controller.getTouchButtons());
         }
     }
 
     @Override
     public void draw() {
-        if (game == null || renderer == null) {
-            Utils.background(0, 0, 0);
-            CoreRenderer.engine.glClear();
-            return;
-        }
-
         Utils.background(0, 0, 0);
         CoreRenderer.engine.glClear();
 
+        if (camera == null) {
+            return;
+        }
+
         shader.apply();
-        gl.glDisable(glc.GL_DEPTH_TEST()); // 2D sprites: rely on draw order, avoid depth-related invisibility
+        gl.glDisable(glc.GL_DEPTH_TEST());
         gl.glDisable(glc.GL_CULL_FACE());
         gl.glBlendFunc(glc.GL_SRC_ALPHA(), glc.GL_ONE_MINUS_SRC_ALPHA());
-        CoreRenderer.engine.enableBlend(); // required for sprites with transparent backgrounds (score/winner/explosions)
+        CoreRenderer.engine.enableBlend();
         camera.resetFor2d();
         camera.apply();
         Matrix.applyMatrix(Matrix.resetTranslateMatrix(new float[16]));
 
-        // Match the original Processing order: render current state, then advance logic for the next frame.
-        game.detectTimek();
-        renderer.render(game);
-        game.logic();
+        controller.tickFrame();
+        if (touchInputAdapter != null) {
+            touchInputAdapter.sync(controller.getTouchButtons());
+        }
+
+        renderer.render(controller.getViewModel());
     }
 
     @Override
@@ -96,78 +103,7 @@ public class MainRenderer extends GamePageClass {
     public void onPause() {
     }
 
-    private void installDesktopKeyboardControls() {
-        deleteDesktopKeyboardControls();
-
-        desktopKeyListeners = new KeyListener[]{
-                // Red snake (id=0): WASD
-                new KeyListener("W", k -> onDesktopDirKey(0, 0), this),
-                new KeyListener("D", k -> onDesktopDirKey(0, 1), this),
-                new KeyListener("S", k -> onDesktopDirKey(0, 2), this),
-                new KeyListener("A", k -> onDesktopDirKey(0, 3), this),
-
-                // Green snake (id=1): Arrow keys
-                new KeyListener("UP", k -> onDesktopDirKey(1, 0), this),
-                new KeyListener("RIGHT", k -> onDesktopDirKey(1, 1), this),
-                new KeyListener("DOWN", k -> onDesktopDirKey(1, 2), this),
-                new KeyListener("LEFT", k -> onDesktopDirKey(1, 3), this),
-        };
-    }
-
-    private Void onDesktopDirKey(int snakeId, int buttonIndex) {
-        if (game == null || !game.isInitialized()) return null;
-        if (game.isButtonsRevertedActive()) {
-            snakeId = (snakeId + 1) % game.getPlayingUsers();
-        }
-        Snake[] snakes = game.getSnakes();
-        if (snakes == null || snakeId < 0 || snakeId >= snakes.length) return null;
-        Snake s = snakes[snakeId];
-        if (s == null) return null;
-        s.onButtonPressed(game, buttonIndex);
-        return null;
-    }
-
-    private void deleteDesktopKeyboardControls() {
-        for (KeyListener l : desktopKeyListeners) {
-            if (l != null) l.delete();
-        }
-        desktopKeyListeners = new KeyListener[0];
-    }
-
-    private void rebuildTouchProcessors() {
-        for (TouchProcessor tp : buttonTouchProcessors) {
-            if (tp != null) tp.delete();
-        }
-
-        if (game == null) {
-            buttonTouchProcessors = new TouchProcessor[0];
-            return;
-        }
-
-        // 2 players * 4 buttons (touch behavior: same as Processing's touchStarted()).
-        buttonTouchProcessors = new TouchProcessor[game.getPlayingUsers() * 4];
-        int idx = 0;
-        for (int snakeId = 0; snakeId < game.getPlayingUsers(); snakeId++) {
-            for (int bid = 0; bid < 4; bid++) {
-                TouchProcessor tp = getTouchProcessor(bid, snakeId);
-                buttonTouchProcessors[idx++] = tp;
-            }
-        }
-    }
-
-    private TouchProcessor getTouchProcessor(int bid, int snakeId) {
-        final int buttonId = bid;
-        TouchProcessor tp = new TouchProcessor(
-                p -> game.getSnakes()[snakeId].getButtons()[buttonId].checkTouch(p.touchX, p.touchY),
-                p -> {
-                    game.getSnakes()[snakeId].onButtonPressed(game, buttonId);
-                    return null;
-                },
-                  p -> null,
-                p -> null,
-                this
-        );
-        tp.setPriority(-10); // leave room for debugger / other high-priority UI.
-        return tp;
+    private void enqueueCommand(GameCommand command) {
+        controller.enqueue(command);
     }
 }

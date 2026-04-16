@@ -1,12 +1,16 @@
 package com.example.snake_3.game;
 
+import com.example.snake_3.game.render.vm.ExplosionViewModel;
+import com.example.snake_3.game.render.vm.FoodViewModel;
+import com.example.snake_3.game.render.vm.GameViewModel;
+import com.example.snake_3.game.render.vm.MineViewModel;
+import com.example.snake_3.game.render.vm.SegmentViewModel;
+import com.example.snake_3.game.render.vm.SnakeViewModel;
 import com.nikitos.GamePageClass;
 import com.nikitos.main.frameBuffers.FrameBuffer;
 import com.nikitos.maths.PVector;
 
 final class SnakeFieldRenderer {
-    // Engine 2D camera uses eyeZ=20 with near/far=10..20, so world z=0 lands on the far clip plane.
-    // Keep all 2D content comfortably inside that slab to avoid driver-dependent clipping.
     private static final float FIELD_TEXTURE_Z = 5.00f;
     private static final float MINE_Z = 5.05f;
     private static final float SEGMENT_Z = 5.10f;
@@ -25,64 +29,63 @@ final class SnakeFieldRenderer {
         this.assets = assets;
     }
 
-    void onSurfaceChanged(SnakeGame game) {
-        rebuildFieldFrameBuffer(game);
+    void onSurfaceChanged(GameViewModel viewModel) {
+        rebuildFieldFrameBuffer(viewModel);
     }
 
-    void render(SnakeGame game) {
-        ensureFieldFrameBuffer(game);
+    void render(GameViewModel viewModel) {
+        ensureFieldFrameBuffer(viewModel);
 
         if (fieldFrameBuffer == null) {
-            drawFieldContents(game);
+            drawFieldContents(viewModel);
             return;
         }
 
         fieldFrameBuffer.apply();
-        drawFieldContents(game);
+        drawFieldContents(viewModel);
         fieldFrameBuffer.connectDefaultFrameBuffer();
         fieldFrameBuffer.drawTexture(
                 new PVector(0.0f, 0.0f, FIELD_TEXTURE_Z),
-                new PVector(game.getX(), 0.0f, FIELD_TEXTURE_Z),
-                new PVector(0.0f, game.getY(), FIELD_TEXTURE_Z)
+                new PVector(viewModel.x(), 0.0f, FIELD_TEXTURE_Z),
+                new PVector(0.0f, viewModel.y(), FIELD_TEXTURE_Z)
         );
     }
 
-    private void drawFieldContents(SnakeGame game) {
-        for (int i = 0; i < game.getMineLen(); i++) {
-            Mine m = game.getMines()[i];
-            if (m != null) assets.drawMine(m, MINE_Z);
+    private void drawFieldContents(GameViewModel viewModel) {
+        for (MineViewModel mine : viewModel.mines()) {
+            assets.drawMine(mine, viewModel.currentTimeMs(), MINE_Z);
         }
 
-        for (int si = 0; si < game.getPlayingUsers(); si++) {
-            Snake s = game.getSnakes()[si];
-            for (int i = 0; i < s.getLength(); i++) {
-                SnakeSegment seg = s.getSegments()[i];
-                if (seg != null) assets.drawSegment(si, seg, SEGMENT_Z);
+        for (SnakeViewModel snake : viewModel.snakes()) {
+            for (SegmentViewModel segment : snake.segments()) {
+                assets.drawSegment(segment, SEGMENT_Z);
             }
-            Explosion ex = s.getExplosion();
-            if (ex != null) assets.drawExplosion(ex, game, EXPLOSION_Z);
+            ExplosionViewModel explosion = snake.explosion();
+            if (explosion != null) {
+                assets.drawExplosion(explosion, viewModel, EXPLOSION_Z);
+            }
         }
 
-        for (Food f : game.getFoods()) {
-            if (f != null) assets.drawFood(f, FOOD_Z);
+        for (FoodViewModel food : viewModel.foods()) {
+            assets.drawFood(food, FOOD_Z);
         }
     }
 
-    private void ensureFieldFrameBuffer(SnakeGame game) {
-        int width = Math.max(1, Math.round(game.getX()));
-        int height = Math.max(1, Math.round(game.getY()));
+    private void ensureFieldFrameBuffer(GameViewModel viewModel) {
+        int width = Math.max(1, Math.round(viewModel.x()));
+        int height = Math.max(1, Math.round(viewModel.y()));
         if (fieldFrameBuffer == null || fieldFrameBufferWidth != width || fieldFrameBufferHeight != height) {
-            rebuildFieldFrameBuffer(game);
+            rebuildFieldFrameBuffer(viewModel);
         }
     }
 
-    private void rebuildFieldFrameBuffer(SnakeGame game) {
+    private void rebuildFieldFrameBuffer(GameViewModel viewModel) {
         if (fieldFrameBuffer != null) {
             fieldFrameBuffer.delete();
         }
 
-        fieldFrameBufferWidth = Math.max(1, Math.round(game.getX()));
-        fieldFrameBufferHeight = Math.max(1, Math.round(game.getY()));
+        fieldFrameBufferWidth = Math.max(1, Math.round(viewModel.x()));
+        fieldFrameBufferHeight = Math.max(1, Math.round(viewModel.y()));
         fieldFrameBuffer = new FrameBuffer(fieldFrameBufferWidth, fieldFrameBufferHeight, page);
     }
 }

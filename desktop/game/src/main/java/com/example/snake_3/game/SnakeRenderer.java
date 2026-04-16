@@ -1,5 +1,6 @@
 package com.example.snake_3.game;
 
+import com.example.snake_3.game.render.vm.GameViewModel;
 import com.nikitos.GamePageClass;
 
 public final class SnakeRenderer {
@@ -14,24 +15,21 @@ public final class SnakeRenderer {
         this.uiRenderer = desktopPlatform ? new DesktopSnakeUiRenderer(page) : new AndroidSnakeUiRenderer();
     }
 
-    public void onSurfaceChanged(SnakeGame game) {
-        // Surface resize/recreate: rebuild size-dependent GPU assets, but do not touch gameplay state.
-        assets.onSurfaceChanged(game);
-        fieldRenderer.onSurfaceChanged(game);
-        uiRenderer.onSurfaceChanged(game, assets);
+    public void onSurfaceChanged(GameViewModel viewModel) {
+        assets.onSurfaceChanged(viewModel);
+        fieldRenderer.onSurfaceChanged(viewModel);
+        uiRenderer.onSurfaceChanged(viewModel, assets);
         assetsReady = true;
     }
 
-    public void render(SnakeGame game) {
-        // Lazy init fallback (should usually be triggered from MainRenderer.onSurfaceChanged()).
-        if (!assetsReady) {
-            assets.onSurfaceChanged(game);
-            fieldRenderer.onSurfaceChanged(game);
-            uiRenderer.onSurfaceChanged(game, assets);
-            assetsReady = true;
+    public void render(GameViewModel viewModel) {
+        if (viewModel == null) {
+            return;
         }
-
-        fieldRenderer.render(game);
-        uiRenderer.render(game, assets);
+        if (!assetsReady) {
+            onSurfaceChanged(viewModel);
+        }
+        fieldRenderer.render(viewModel);
+        uiRenderer.render(viewModel, assets);
     }
 }

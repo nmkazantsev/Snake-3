@@ -1,7 +1,9 @@
 package com.example.snake_3.game;
 
-interface SnakeUiRenderer {
-    void onSurfaceChanged(SnakeGame game, SnakeRenderAssets assets);
+import com.example.snake_3.game.render.vm.GameViewModel;
 
-    void render(SnakeGame game, SnakeRenderAssets assets);
+interface SnakeUiRenderer {
+    void onSurfaceChanged(GameViewModel viewModel, SnakeRenderAssets assets);
+
+    void render(GameViewModel viewModel, SnakeRenderAssets assets);
 }
