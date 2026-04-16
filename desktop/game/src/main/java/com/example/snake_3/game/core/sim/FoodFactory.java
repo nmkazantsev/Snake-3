@@ -15,7 +15,26 @@ public final class FoodFactory {
     }
 
     public FoodState create(GameState state) {
-        return new FoodState(
+        int maxAttempts = Math.max(1, state.metrics.gridCols * state.metrics.gridRows * 2);
+        FoodState fallback = null;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            FoodState candidate = new FoodState(
+                    playfieldSystem.getRandomPlayableCol(state.metrics, random),
+                    playfieldSystem.getRandomPlayableRow(state.metrics, random),
+                    FoodType.fromCode(random.nextTruncatedInt(0.0f, 13.0f))
+            );
+            if (fallback == null) {
+                fallback = candidate;
+            }
+            if (!isOccupiedByOtherFood(state, candidate)) {
+                return candidate;
+            }
+        }
+
+        return fallback != null
+                ? fallback
+                : new FoodState(
                 playfieldSystem.getRandomPlayableCol(state.metrics, random),
                 playfieldSystem.getRandomPlayableRow(state.metrics, random),
                 FoodType.fromCode(random.nextTruncatedInt(0.0f, 13.0f))
@@ -28,5 +47,17 @@ public final class FoodFactory {
                 state.foods[index] = create(state);
             }
         }
+    }
+
+    private boolean isOccupiedByOtherFood(GameState state, FoodState candidate) {
+        for (FoodState existingFood : state.foods) {
+            if (existingFood == null) {
+                continue;
+            }
+            if (existingFood.px == candidate.px && existingFood.py == candidate.py) {
+                return true;
+            }
+        }
+        return false;
     }
 }

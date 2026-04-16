@@ -34,8 +34,31 @@ class GameSimulationTest {
         assertEquals(2, harness.state.foods.length);
         assertNotNull(harness.state.foods[0]);
         assertNotNull(harness.state.foods[1]);
+        assertFalse(
+                harness.state.foods[0].px == harness.state.foods[1].px
+                        && harness.state.foods[0].py == harness.state.foods[1].py
+        );
         assertEquals(20.0f, harness.state.snakes[0].speed);
         assertEquals(20.0f, harness.state.snakes[1].speed);
+    }
+
+    @Test
+    void foodFactoryAvoidsSpawningOnExistingFoodCell() {
+        Harness harness = createHarness();
+        harness.state.foods = new FoodState[]{
+                new FoodState(10, 10, FoodType.GROW_SELF),
+                null
+        };
+        harness.random.reset(
+                normalizedForCol(harness, 10), normalizedForRow(harness, 10), 0.0f,
+                normalizedForCol(harness, 12), normalizedForRow(harness, 14), 0.0f
+        );
+
+        harness.foodFactory.refillMissing(harness.state);
+
+        assertNotNull(harness.state.foods[1]);
+        assertEquals(12, harness.state.foods[1].px);
+        assertEquals(14, harness.state.foods[1].py);
     }
 
     @Test
@@ -317,7 +340,15 @@ class GameSimulationTest {
         GameSimulation simulation = new GameSimulation(snakeMovementSystem, collisionSystem, foodEffectSystem, roundResetSystem);
         simulation.initialize(state, 0L);
         random.reset(randomValues);
-        return new Harness(config, state, simulation, foodEffectSystem, random);
+        return new Harness(config, state, simulation, foodEffectSystem, random, foodFactory);
+    }
+
+    private float normalizedForCol(Harness harness, int col) {
+        return (col - harness.state.metrics.minPlayableCol) / (float) ((harness.state.metrics.maxPlayableCol + 1) - harness.state.metrics.minPlayableCol);
+    }
+
+    private float normalizedForRow(Harness harness, int row) {
+        return (row - harness.state.metrics.playfieldMinRow) / (float) ((harness.state.metrics.playfieldMaxRow + 1) - harness.state.metrics.playfieldMinRow);
     }
 
     private record Harness(
@@ -325,7 +356,8 @@ class GameSimulationTest {
             GameState state,
             GameSimulation simulation,
             FoodEffectSystem foodEffectSystem,
-            TestRandomSource random
+            TestRandomSource random,
+            FoodFactory foodFactory
     ) {
     }
 }

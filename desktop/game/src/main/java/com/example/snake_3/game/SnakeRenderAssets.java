@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public final class SnakeRenderAssets {
+    private static final String INVERTED_CONTROLS_TEXT = "управление инвертировано";
+    private static final String CONTROL_SWAP_TEXT = "смена управления";
     private static final float SEGMENT_TEX_SIZE = 64f;
     private static final float FOOD_TEX_SIZE = 64f;
     private static final float MINE_TEX_SIZE = 128f;
@@ -57,6 +59,12 @@ public final class SnakeRenderAssets {
     private float winnerDrawH = 1f;
     private float winnerPadX = 0f;
     private float winnerBaselineOffsetY = 0f;
+    private SimplePolygon invertedControlsPoly;
+    private float invertedControlsDrawW = 1f;
+    private float invertedControlsDrawH = 1f;
+    private SimplePolygon controlSwapPoly;
+    private float controlSwapDrawW = 1f;
+    private float controlSwapDrawH = 1f;
 
     public SnakeRenderAssets(GamePageClass page) {
         this.page = page;
@@ -81,8 +89,12 @@ public final class SnakeRenderAssets {
         deletePolygon(buttonTallP1);
         deletePolygon(scorePoly);
         deletePolygon(winnerPoly);
+        deletePolygon(invertedControlsPoly);
+        deletePolygon(controlSwapPoly);
         scorePoly = null;
         winnerPoly = null;
+        invertedControlsPoly = null;
+        controlSwapPoly = null;
 
         segmentTile = new SimplePolygon[2][100];
         buildFoodTiles();
@@ -90,6 +102,7 @@ public final class SnakeRenderAssets {
         buildExplosionSquareTiles();
         buildButtonTiles();
         buildWinnerTiles();
+        buildWarningTiles();
     }
 
     public void setControlsReversed(boolean controlsReversed) {
@@ -254,6 +267,24 @@ public final class SnakeRenderAssets {
         }
 
         winnerPoly.prepareAndDraw(rotation, topLeftX, topLeftY, winnerDrawW, winnerDrawH, z);
+    }
+
+    public float drawControlSwapWarning(GameViewModel viewModel, float topY, float z) {
+        if (controlSwapPoly == null) {
+            return 0f;
+        }
+        float topLeftX = (viewModel.x() * 0.5f) - (controlSwapDrawW * 0.5f);
+        controlSwapPoly.prepareAndDraw(topLeftX, topY, controlSwapDrawW, controlSwapDrawH, z);
+        return controlSwapDrawH;
+    }
+
+    public float drawInvertedControlsWarning(GameViewModel viewModel, float topY, float z) {
+        if (invertedControlsPoly == null) {
+            return 0f;
+        }
+        float topLeftX = (viewModel.x() * 0.5f) - (invertedControlsDrawW * 0.5f);
+        invertedControlsPoly.prepareAndDraw(topLeftX, topY, invertedControlsDrawW, invertedControlsDrawH, z);
+        return invertedControlsDrawH;
     }
 
     private SimplePolygon createSegmentTile(int snakeId, int brightness) {
@@ -483,6 +514,65 @@ public final class SnakeRenderAssets {
             return image;
         }, true, 0, page);
         winnerPoly.redrawNow();
+    }
+
+    private void buildWarningTiles() {
+        WarningTile inverted = buildWarningTile(INVERTED_CONTROLS_TEXT, 255.0f, 120.0f, 120.0f);
+        invertedControlsPoly = inverted.polygon();
+        invertedControlsDrawW = inverted.width();
+        invertedControlsDrawH = inverted.height();
+
+        WarningTile swapped = buildWarningTile(CONTROL_SWAP_TEXT, 255.0f, 220.0f, 120.0f);
+        controlSwapPoly = swapped.polygon();
+        controlSwapDrawW = swapped.width();
+        controlSwapDrawH = swapped.height();
+    }
+
+    private WarningTile buildWarningTile(String text, float red, float green, float blue) {
+        final float textSize = Math.max(28.0f * kx, 18.0f);
+
+        PImage measurer = new PImage(1, 1);
+        measurer.setAntiAlias(true);
+        measurer.setUpperText(true);
+        measurer.textAlign(TextAlign.CENTER);
+        measurer.textSize(textSize);
+
+        float textWidth = Math.max(1f, measurer.getTextWidth(text));
+        float textHeight = Math.max(1f, measurer.getTextHeight(text));
+        float padX = Math.max(12f, textSize * 0.35f);
+        float padY = Math.max(6f, textSize * 0.24f);
+        float drawW = (float) Math.ceil(textWidth + (padX * 2.0f));
+        float drawH = (float) Math.ceil(textHeight + (padY * 2.0f));
+
+        SimplePolygon polygon = new SimplePolygon(unused -> {
+            PImage image = new PImage(drawW, drawH);
+            image.clear();
+            image.setAntiAlias(true);
+            image.setUpperText(true);
+            image.textAlign(TextAlign.CENTER);
+            image.textSize(textSize);
+
+            image.noStroke();
+            image.fill(0.0f, 0.0f, 0.0f, 170.0f);
+            image.rect(0, 0, drawW, drawH);
+
+            float borderStroke = Math.max(2f, textSize * 0.08f);
+            image.stroke(red, green, blue, 255.0f);
+            image.strokeWeight(borderStroke);
+            image.fill(0.0f, 0.0f, 0.0f, 0.0f);
+            image.rect(borderStroke * 0.5f, borderStroke * 0.5f, drawW - borderStroke, drawH - borderStroke);
+
+            image.noStroke();
+            image.fill(red, green, blue, 255.0f);
+            float baselineY = Math.max(0f, Math.min((drawH * 0.5f) + (textHeight * 0.35f), drawH));
+            image.text(text, drawW * 0.5f, baselineY);
+            return image;
+        }, true, 0, page);
+        polygon.redrawNow();
+        return new WarningTile(polygon, drawW, drawH);
+    }
+
+    private record WarningTile(SimplePolygon polygon, float width, float height) {
     }
 
     private void deletePolygon(SimplePolygon polygon) {
