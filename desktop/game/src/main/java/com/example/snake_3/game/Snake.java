@@ -4,7 +4,7 @@ import com.nikitos.utils.Utils;
 
 public final class Snake {
     private static final float MIN_SPEED = 10.0f;
-    private static final float INITIAL_SPEED = 13;
+    private static final float INITIAL_SPEED = 14;
 
     private final int id;
     private int chosenDirection;
