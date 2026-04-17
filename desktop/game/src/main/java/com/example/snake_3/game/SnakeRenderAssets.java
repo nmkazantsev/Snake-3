@@ -402,26 +402,7 @@ public final class SnakeRenderAssets {
             PImage image = new PImage(BUTTON_WIDE_TEX_W, BUTTON_WIDE_TEX_H);
             image.clear();
             image.setAntiAlias(true);
-            image.fill(red, green, blue);
-            image.noStroke();
-            image.rect(0, 0, BUTTON_WIDE_TEX_W, BUTTON_WIDE_TEX_H);
-
-            float baseStroke = Math.max(2f, Math.min(BUTTON_WIDE_TEX_W, BUTTON_WIDE_TEX_H) * 0.03f);
-            image.stroke(255, 255, 255, 255);
-            image.strokeWeight(baseStroke);
-            image.rect(baseStroke * 0.5f, baseStroke * 0.5f, BUTTON_WIDE_TEX_W - baseStroke, BUTTON_WIDE_TEX_H - baseStroke);
-
-            if (controlsReversed) {
-                float outerStroke = Math.max(6f, Math.min(BUTTON_WIDE_TEX_W, BUTTON_WIDE_TEX_H) * 0.16f);
-                image.stroke(255.0f, 0.0f, 0.0f, 255.0f);
-                image.strokeWeight(outerStroke);
-                image.rect(outerStroke * 0.5f, outerStroke * 0.5f, BUTTON_WIDE_TEX_W - outerStroke, BUTTON_WIDE_TEX_H - outerStroke);
-
-                float innerStroke = Math.max(4f, Math.min(BUTTON_WIDE_TEX_W, BUTTON_WIDE_TEX_H) * 0.08f);
-                image.stroke(255.0f, 90.0f, 90.0f, 255.0f);
-                image.strokeWeight(innerStroke);
-                image.rect(innerStroke * 0.5f, innerStroke * 0.5f, BUTTON_WIDE_TEX_W - innerStroke, BUTTON_WIDE_TEX_H - innerStroke);
-            }
+            SnakeUiPainter.drawGameplayButton(image, 0.0f, 0.0f, BUTTON_WIDE_TEX_W, BUTTON_WIDE_TEX_H, red, green, blue, controlsReversed);
             return image;
         };
     }
@@ -431,26 +412,7 @@ public final class SnakeRenderAssets {
             PImage image = new PImage(BUTTON_TALL_TEX_W, BUTTON_TALL_TEX_H);
             image.clear();
             image.setAntiAlias(true);
-            image.fill(red, green, blue);
-            image.noStroke();
-            image.rect(0, 0, BUTTON_TALL_TEX_W, BUTTON_TALL_TEX_H);
-
-            float baseStroke = Math.max(2f, Math.min(BUTTON_TALL_TEX_W, BUTTON_TALL_TEX_H) * 0.03f);
-            image.stroke(255, 255, 255, 255);
-            image.strokeWeight(baseStroke);
-            image.rect(baseStroke * 0.5f, baseStroke * 0.5f, BUTTON_TALL_TEX_W - baseStroke, BUTTON_TALL_TEX_H - baseStroke);
-
-            if (controlsReversed) {
-                float outerStroke = Math.max(6f, Math.min(BUTTON_TALL_TEX_W, BUTTON_TALL_TEX_H) * 0.16f);
-                image.stroke(255.0f, 0.0f, 0.0f, 255.0f);
-                image.strokeWeight(outerStroke);
-                image.rect(outerStroke * 0.5f, outerStroke * 0.5f, BUTTON_TALL_TEX_W - outerStroke, BUTTON_TALL_TEX_H - outerStroke);
-
-                float innerStroke = Math.max(4f, Math.min(BUTTON_TALL_TEX_W, BUTTON_TALL_TEX_H) * 0.08f);
-                image.stroke(255.0f, 90.0f, 90.0f, 255.0f);
-                image.strokeWeight(innerStroke);
-                image.rect(innerStroke * 0.5f, innerStroke * 0.5f, BUTTON_TALL_TEX_W - innerStroke, BUTTON_TALL_TEX_H - innerStroke);
-            }
+            SnakeUiPainter.drawGameplayButton(image, 0.0f, 0.0f, BUTTON_TALL_TEX_W, BUTTON_TALL_TEX_H, red, green, blue, controlsReversed);
             return image;
         };
     }
@@ -459,6 +421,7 @@ public final class SnakeRenderAssets {
         float textSize = sizx * 2.0f;
         PImage measurer = new PImage(1, 1);
         measurer.setAntiAlias(true);
+        SnakeUiResources.applyUiFont(measurer);
         measurer.setUpperText(true);
         measurer.textAlign(TextAlign.CENTER);
         measurer.textSize(textSize);
@@ -472,6 +435,7 @@ public final class SnakeRenderAssets {
         PImage image = new PImage(scoreDrawW, scoreDrawH);
         image.clear();
         image.setAntiAlias(true);
+        SnakeUiResources.applyUiFont(image);
         image.setUpperText(true);
         image.noStroke();
         image.fill(255, 255, 255, 255);
@@ -488,6 +452,7 @@ public final class SnakeRenderAssets {
 
         PImage measurer = new PImage(1, 1);
         measurer.setAntiAlias(true);
+        SnakeUiResources.applyUiFont(measurer);
         measurer.setUpperText(true);
         measurer.textAlign(TextAlign.LEFT);
         measurer.textSize(textSize);
@@ -505,6 +470,7 @@ public final class SnakeRenderAssets {
             PImage image = new PImage(winnerDrawW, winnerDrawH);
             image.clear();
             image.setAntiAlias(true);
+            SnakeUiResources.applyUiFont(image);
             image.setUpperText(true);
             image.noStroke();
             image.fill(255, 255, 255, 255);
@@ -533,6 +499,7 @@ public final class SnakeRenderAssets {
 
         PImage measurer = new PImage(1, 1);
         measurer.setAntiAlias(true);
+        SnakeUiResources.applyUiFont(measurer);
         measurer.setUpperText(true);
         measurer.textAlign(TextAlign.CENTER);
         measurer.textSize(textSize);
@@ -548,6 +515,7 @@ public final class SnakeRenderAssets {
             PImage image = new PImage(drawW, drawH);
             image.clear();
             image.setAntiAlias(true);
+            SnakeUiResources.applyUiFont(image);
             image.setUpperText(true);
             image.textAlign(TextAlign.CENTER);
             image.textSize(textSize);

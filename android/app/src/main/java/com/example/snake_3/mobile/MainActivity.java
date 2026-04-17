@@ -17,7 +17,7 @@ import com.seal.gl_engine.platform.AndroidLauncher;
 import com.seal.gl_engine.platform.AndroidLauncherParams;
 import com.seal.gl_engine.touch.AndroidMotionEventAdapter;
 
-import com.example.snake_3.game.MainRenderer;
+import com.example.snake_3.game.SnakeIntroPage;
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
     private Engine engine;
@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         AndroidLauncherParams androidLauncherParams = new AndroidLauncherParams(getApplicationContext())
                 .setDebug(false)
-                .setStartPage(unused -> new MainRenderer())
+                .setStartPage(unused -> new SnakeIntroPage())
                 .setMSAA(true);
 
         AndroidLauncher androidLauncher = new AndroidLauncher(androidLauncherParams);
