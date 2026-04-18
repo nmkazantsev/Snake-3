@@ -24,6 +24,11 @@ final class SnakeUiResources {
         return sharedUiFont;
     }
 
+    static Object getPlatformFont() {
+        PFont font = getSharedUiFont();
+        return font == null ? null : font.getPlatformFont();
+    }
+
     static void applyUiFont(PImage image) {
         if (image == null) {
             return;

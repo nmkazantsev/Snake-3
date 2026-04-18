@@ -32,13 +32,13 @@ public final class GameConfig {
         this.maxSegments = 500;
         this.defaultSpawnRowRatio = 0.28f;
         this.initialSpeed = 5.0f;
-        this.minSpeed = 10.0f;
+        this.minSpeed = 3.0f;
         this.reverseTimeMs = 10_000L;
         this.buttonsRevertedTimeMs = 5_000L;
         this.roundResetDelayMs = 1_000L;
         this.explosionDurationMs = 4_000L;
         this.mineExplosionDurationMs = 1_000L;
-        this.fixedStepMs = 1L;
+        this.fixedStepMs = 1;
     }
 
     public static GameConfig forPlatform(boolean desktopPlatform) {
