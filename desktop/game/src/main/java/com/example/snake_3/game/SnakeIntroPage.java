@@ -3,7 +3,7 @@ package com.example.snake_3.game;
 import com.nikitos.CoreRenderer;
 import com.nikitos.GamePageClass;
 import com.nikitos.main.camera.Camera;
-import com.nikitos.main.keyboard.KeyReleasedListener;
+import com.nikitos.main.keyboard.KeyListener;
 import com.nikitos.main.shaders.Shader;
 import com.nikitos.main.shaders.default_adaptors.MainShaderAdaptor;
 import com.nikitos.main.touch.TouchProcessor;
@@ -12,6 +12,7 @@ import com.nikitos.platformBridge.GLConstBridge;
 import com.nikitos.platformBridge.GeneralPlatformBridge;
 import com.nikitos.platformBridge.Platform;
 import com.nikitos.utils.Utils;
+import com.example.snake_3.game.input.DesktopKeyboardFramePump;
 
 public final class SnakeIntroPage extends GamePageClass {
     private static final long ADVANCE_GUARD_MS = 250L;
@@ -23,7 +24,7 @@ public final class SnakeIntroPage extends GamePageClass {
     private final SnakeIntroRenderer renderer;
 
     private Camera camera;
-    private KeyReleasedListener enterListener;
+    private KeyListener enterListener;
     private TouchProcessor touchProcessor;
     private SnakeIntroRenderer.Screen currentScreen = SnakeIntroRenderer.Screen.CONTROLS;
     private long lastAdvanceMs = -ADVANCE_GUARD_MS;
@@ -53,6 +54,10 @@ public final class SnakeIntroPage extends GamePageClass {
 
     @Override
     public void draw() {
+        if (desktopPlatform) {
+            DesktopKeyboardFramePump.flushPendingEvents();
+        }
+
         Utils.background(0, 0, 0);
         CoreRenderer.engine.glClear();
 
@@ -82,7 +87,7 @@ public final class SnakeIntroPage extends GamePageClass {
 
     private void installInput() {
         if (desktopPlatform) {
-            enterListener = new KeyReleasedListener("ENTER", key -> advance(), this);
+            enterListener = new KeyListener("ENTER", key -> advance(), this);
             return;
         }
 

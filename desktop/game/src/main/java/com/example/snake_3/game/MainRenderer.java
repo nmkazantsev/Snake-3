@@ -5,6 +5,7 @@ import com.example.snake_3.game.core.command.GameCommand;
 import com.example.snake_3.game.infra.SystemClock;
 import com.example.snake_3.game.infra.UtilsRandomSource;
 import com.example.snake_3.game.input.DesktopInputAdapter;
+import com.example.snake_3.game.input.DesktopKeyboardFramePump;
 import com.example.snake_3.game.input.TouchInputAdapter;
 import com.example.snake_3.game.render.vm.GameViewModel;
 import com.nikitos.CoreRenderer;
@@ -71,6 +72,10 @@ public class MainRenderer extends GamePageClass {
 
     @Override
     public void draw() {
+        if (desktopInputAdapter != null) {
+            DesktopKeyboardFramePump.flushPendingEvents();
+        }
+
         Utils.background(0, 0, 0);
         CoreRenderer.engine.glClear();
 
